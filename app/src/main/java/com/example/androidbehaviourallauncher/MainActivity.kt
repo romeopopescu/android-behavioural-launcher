@@ -2,6 +2,7 @@
 
 package com.example.androidbehaviourallauncher
 
+import android.app.AppOpsManager
 import android.content.ClipData
 import android.content.ClipDescription
 import android.content.Context
@@ -79,6 +80,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.androidbehaviourallauncher.ui.theme.AndroidLauncherForBehavouralProfileTheme
@@ -92,11 +94,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             AndroidLauncherForBehavouralProfileTheme {
-                    LauncherScreen()
+
+                LauncherScreen()
             }
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
