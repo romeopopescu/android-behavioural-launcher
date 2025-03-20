@@ -1,4 +1,4 @@
-package com.example.androidbehaviourallauncher.ui.theme
+package com.example.abl.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

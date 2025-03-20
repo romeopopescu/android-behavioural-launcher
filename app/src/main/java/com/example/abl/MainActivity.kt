@@ -1,8 +1,7 @@
 @file:OptIn(ExperimentalFoundationApi::class)
 
-package com.example.androidbehaviourallauncher
+package com.example.abl
 
-import android.app.AppOpsManager
 import android.content.ClipData
 import android.content.ClipDescription
 import android.content.Context
@@ -80,10 +79,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.androidbehaviourallauncher.ui.theme.AndroidLauncherForBehavouralProfileTheme
+import com.example.abl.ui.theme.AndroidLauncherForBehavouralProfileTheme
 import kotlinx.coroutines.launch
 
 

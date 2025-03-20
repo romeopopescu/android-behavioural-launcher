@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.androidbehaviourallauncher"
+    namespace = "com.example.abl"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.androidbehaviourallauncher"
+        applicationId = "com.example.abl"
         minSdk = 25
         targetSdk = 35
         versionCode = 1

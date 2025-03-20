@@ -1,4 +1,4 @@
-package com.example.androidbehaviourallauncher
+package com.example.abl
 
 import org.junit.Test
 
