@@ -1,4 +1,4 @@
-package com.example.abl
+package com.example.abl.ui
 
 import android.content.Context
 import android.content.Intent

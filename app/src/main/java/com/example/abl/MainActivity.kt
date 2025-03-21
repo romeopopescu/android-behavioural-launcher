@@ -5,10 +5,12 @@ package com.example.abl
 import android.content.ClipData
 import android.content.ClipDescription
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -46,6 +48,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -81,18 +84,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.abl.ui.SearchViewModelFactory
+import com.example.abl.ui.AppInformation
+import com.example.abl.ui.LauncherViewModel
+import com.example.abl.ui.LauncherViewModelFactory
+import com.example.abl.ui.SearchViewModel
 import com.example.abl.ui.theme.AndroidLauncherForBehavouralProfileTheme
+import com.example.abl.utils.UsageStatsHelper
 import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: LauncherViewModel by viewModels {
+        LauncherViewModelFactory(this)
+    }
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (!UsageStatsHelper.hasUsageStatsPermission(this)) {
+            UsageStatsHelper.openUsageAccessSettings(this)
+        }
+        UsageStatsHelper.getUsageStats(this)
+        UsageStatsHelper.getAppUsageData(this)
         setContent {
             AndroidLauncherForBehavouralProfileTheme {
-
                 LauncherScreen()
             }
         }
@@ -120,7 +136,8 @@ fun AppDrawer(
         dragHandle = null
     ) {
         val viewModel: SearchViewModel = viewModel(factory =
-        SearchViewModelFactory(context))
+            SearchViewModelFactory(context)
+        )
         val searchText by viewModel.searchText.collectAsState()
         val apps by viewModel.apps.collectAsState()
         viewModel.deleteSearch()
@@ -138,43 +155,50 @@ fun AppDrawer(
                         .fillMaxWidth()
                         .padding(bottom = 8.dp)
                 ) {
-                    TextField(
-                        value = searchText,
-                        onValueChange = viewModel::onSearchTextChange,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                RoundedCornerShape(8.dp)
-                            ),
-                        placeholder = { Text("Search") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "search icon"
-                            )
-                        },
-                        trailingIcon = {
-                            if (searchText.isNotEmpty()) {
-                                IconButton(onClick = { viewModel.deleteSearch() }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "clear search"
-                                    )
+                    Row {
+                        TextField(
+                            value = searchText,
+                            onValueChange = viewModel::onSearchTextChange,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    RoundedCornerShape(8.dp)
+                                ),
+                            placeholder = { Text("Search") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "search icon"
+                                )
+                            },
+                            trailingIcon = {
+                                if (searchText.isNotEmpty()) {
+                                    IconButton(onClick = { viewModel.deleteSearch() }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "clear search"
+                                        )
+                                    }
                                 }
-                            }
-                        },
-                        singleLine = true,
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            disabledContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
+                            },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                disabledIndicatorColor = Color.Transparent
+                            )
                         )
-                    )
+//                        val intent = Intent()
+//                        Button(
+//                            onClick = context.startActivity(intent)
+//                        ) { }
+                    }
+
                 }
 
             }
