@@ -107,6 +107,7 @@ class MainActivity : ComponentActivity() {
         }
         UsageStatsHelper.getUsageStats(this)
         UsageStatsHelper.getAppUsageData(this)
+        viewModel.appUsage
         setContent {
             AndroidLauncherForBehavouralProfileTheme {
                 LauncherScreen()
