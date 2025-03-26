@@ -92,5 +92,4 @@ object UsageStatsHelper {
         }
         return appUsageDataList
     }
-
 }

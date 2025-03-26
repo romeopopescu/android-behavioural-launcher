@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.abl.data.AppInformation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,24 +40,6 @@ class SearchViewModel(private val context: Context): ViewModel() {
     }
     fun deleteSearch() {
         _searchText.value = ""
-    }
-}
-
-@Stable
-data class AppInformation(
-    val name: String,
-    val packageName: String,
-    val icon: Drawable,
-    val id: String = UUID.randomUUID().toString()
-) {
-    fun doesMatchSearchQuery(query: String): Boolean {
-        val matchingCombinations = listOf(
-            name,
-            "${name.first()}"
-        )
-        return matchingCombinations.any {
-            it.contains(query, ignoreCase = true)
-        }
     }
 }
 
