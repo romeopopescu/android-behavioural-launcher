@@ -3,7 +3,7 @@ package com.example.abl.ui
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.example.abl.data.AppUsageData
+import com.example.abl.data.database.entity.AppUsageData
 import com.example.abl.utils.UsageStatsHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

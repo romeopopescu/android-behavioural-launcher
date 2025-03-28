@@ -9,7 +9,7 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.content.IntentCompat
 import androidx.core.content.getSystemService
-import com.example.abl.data.AppUsageData
+import com.example.abl.data.database.entity.AppUsageData
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date

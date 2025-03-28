@@ -6,7 +6,9 @@ import android.graphics.drawable.Drawable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.abl.data.AppInformation
+import androidx.room.ColumnInfo
+import androidx.room.PrimaryKey
+import com.example.abl.data.database.entity.AppInformation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,8 +44,24 @@ class SearchViewModel(private val context: Context): ViewModel() {
         _searchText.value = ""
     }
 }
+data class AppInformationTest(
+    val name: String,
+    val packageName: String,
+    val icon: Drawable, //make it int to store the resource id R.drawable.icon
+    val id: String = UUID.randomUUID().toString()
+) {
+    fun doesMatchSearchQuery(query: String): Boolean {
+        val matchingCombinations = listOf(
+            name,
+            "${name.first()}"
+        )
+        return matchingCombinations.any {
+            it.contains(query, ignoreCase = true)
+        }
+    }
+}
 
-fun getInstalledApps(context: Context): List<AppInformation> {
+fun getInstalledApps(context: Context): List<AppInformationTest> {
     val packageManager = context.packageManager
 
     val intent = Intent(Intent.ACTION_MAIN).apply {
@@ -55,7 +73,7 @@ fun getInstalledApps(context: Context): List<AppInformation> {
         val packageName = it.activityInfo.packageName
         val icon = it.activityInfo.loadIcon(packageManager)
 
-        AppInformation(appName, packageName, icon)
+        AppInformationTest(appName, packageName, icon)
     }
 
     return apps.sortedBy { it.name.lowercase() }

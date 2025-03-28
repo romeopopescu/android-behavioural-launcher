@@ -85,7 +85,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.abl.ui.SearchViewModelFactory
-import com.example.abl.ui.AppInformation
+import com.example.abl.ui.AppInformationTest
 import com.example.abl.ui.LauncherViewModel
 import com.example.abl.ui.LauncherViewModelFactory
 import com.example.abl.ui.SearchViewModel
@@ -387,7 +387,7 @@ fun HomeScreen() {
 }
 
 @Composable
-fun HomeScreenApp(app: AppInformation, modifier: Modifier = Modifier) {
+fun HomeScreenApp(app: AppInformationTest, modifier: Modifier = Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.padding(10.dp)
