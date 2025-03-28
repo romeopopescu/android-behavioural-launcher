@@ -61,8 +61,8 @@ object UsageStatsHelper {
         return usageStatsMap ?: emptyMap()
     }
 
-    fun getAppUsageData(context: Context): List<AppUsageData> {
-        val appUsageDataList = mutableListOf<AppUsageData>()
+    fun getAppUsageData(context: Context): List<AppUsageDataTest> {
+        val appUsageDataList = mutableListOf<AppUsageDataTest>()
         val usageStatsMap = getUsageStats(context)
         val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
@@ -80,7 +80,7 @@ object UsageStatsHelper {
             val lastTimeUsedFormatted = dateFormat.format(Date(lastTimeUsed))
             val firstTimeUsedFormatted = dateFormat.format(Date(firstTimeStamp))
 
-            val appUsageData = AppUsageData(
+            val appUsageData = AppUsageDataTest(
                 packageName,
                 totalTimeInForegroundHours,
                 totalTimeInForegroundMinutes,
@@ -93,3 +93,12 @@ object UsageStatsHelper {
         return appUsageDataList
     }
 }
+
+//temporary data class
+data class AppUsageDataTest(
+    val packageName: String,
+    val totalTimeInForegroundHours: Long,
+    val totalTimeInForegroundMinutes: Long,
+    val lastTimeUsedFormatted: String,
+    val firstTimeUsedFormatted: String
+)

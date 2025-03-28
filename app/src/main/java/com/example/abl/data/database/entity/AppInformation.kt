@@ -11,7 +11,7 @@ import java.util.UUID
 @Entity(tableName = "AppInformation")
 data class AppInformation(
     @PrimaryKey(autoGenerate = true) val appId: Int,
-    @ColumnInfo(name = "name") val name: String,
-    @ColumnInfo(name = "packageName") val packageName: String,
-    @ColumnInfo(name = "icon") val icon: Int//make it int to store the resource id R.drawable.icon
+    val name: String,
+    val packageName: String,
+    val icon: Int//make it int to store the resource id R.drawable.icon
 )
