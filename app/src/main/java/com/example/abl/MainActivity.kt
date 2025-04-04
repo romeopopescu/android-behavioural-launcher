@@ -84,6 +84,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.abl.data.database.AppDatabase
 import com.example.abl.ui.SearchViewModelFactory
 import com.example.abl.ui.AppInformationTest
 import com.example.abl.ui.LauncherViewModel
@@ -108,6 +109,8 @@ class MainActivity : ComponentActivity() {
         UsageStatsHelper.getUsageStats(this)
         UsageStatsHelper.getAppUsageData(this)
         viewModel.appUsage
+
+        AppDatabase db = new
         setContent {
             AndroidLauncherForBehavouralProfileTheme {
                 LauncherScreen()
