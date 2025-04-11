@@ -1,4 +1,6 @@
 plugins {
+    id("com.google.dagger.hilt.android")
+    id("com.google.devtools.ksp") version "2.1.20-2.0.0"
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
@@ -37,13 +39,25 @@ android {
     buildFeatures {
         compose = true
     }
+    kotlin {
+        sourceSets.configureEach {
+            kotlin.srcDir("build/generated/ksp/$name/kotlin")
+        }
+    }
 }
 
 dependencies {
-    val room_version = "2.6.1"
+    //hilt
+    implementation("com.google.dagger:hilt-android:2.51.1") // Make sure this matches the plugin version
+    ksp("com.google.dagger:hilt-compiler:2.51.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
+    //room database
+    val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
     annotationProcessor("androidx.room:room-compiler:$room_version")
+
+    //other
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

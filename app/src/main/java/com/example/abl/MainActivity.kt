@@ -87,8 +87,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.abl.data.database.AppDatabase
 import com.example.abl.ui.SearchViewModelFactory
 import com.example.abl.ui.AppInformationTest
-import com.example.abl.ui.LauncherViewModel
-import com.example.abl.ui.LauncherViewModelFactory
+//import com.example.abl.ui.LauncherViewModel
+//import com.example.abl.ui.LauncherViewModelFactory
 import com.example.abl.ui.SearchViewModel
 import com.example.abl.ui.theme.AndroidLauncherForBehavouralProfileTheme
 import com.example.abl.utils.UsageStatsHelper
@@ -96,9 +96,9 @@ import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: LauncherViewModel by viewModels {
-        LauncherViewModelFactory(this)
-    }
+//    private val viewModel: LauncherViewModel by viewModels {
+//        LauncherViewModelFactory(this)
+//    }
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -108,9 +108,9 @@ class MainActivity : ComponentActivity() {
         }
         UsageStatsHelper.getUsageStats(this)
         UsageStatsHelper.getAppUsageData(this)
-        viewModel.appUsage
+//        viewModel.appUsage
 
-        AppDatabase db = new
+//        AppDatabase db = new
         setContent {
             AndroidLauncherForBehavouralProfileTheme {
                 LauncherScreen()

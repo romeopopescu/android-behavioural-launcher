@@ -14,4 +14,7 @@ interface UserProfileDao {
     //this won't be used most likely
     @Query("SELECT * FROM UserProfile")
     suspend fun getAllUserProfiles(): List<UserProfile>
+
+    @Query("SELECT * FROM UserProfile WHERE id = :userId")
+    suspend fun getUserProfileById(userId: Int): UserProfile
 }

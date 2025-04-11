@@ -13,4 +13,7 @@ interface AppInformationDao {
 
     @Query("SELECT * FROM AppInformation")
     suspend fun getAllApps(): List<AppInformation>
+
+    @Query("SELECT * FROM AppInformation WHERE appId = :id")
+    suspend fun getAppById(id: Int): AppInformation
 }

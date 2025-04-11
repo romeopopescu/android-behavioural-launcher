@@ -12,5 +12,5 @@ interface RiskyAppDao {
     suspend fun insert(riskyApp: RiskyApp)
 
     @Query("SELECT * FROM RiskyApp")
-    suspend fun getAllRiskyApps()
+    suspend fun getAllRiskyApps(): List<RiskyApp>
 }
