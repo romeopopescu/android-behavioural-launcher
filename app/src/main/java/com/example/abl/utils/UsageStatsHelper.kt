@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.provider.Settings
 import android.util.Log
-import androidx.core.content.IntentCompat
 import androidx.core.content.getSystemService
 import com.example.abl.data.database.entity.AppUsageData
 import java.text.SimpleDateFormat
@@ -17,6 +16,7 @@ import java.util.Locale
 
 object UsageStatsHelper {
     private const val TAG = "UsageStatsHelper"
+    private const val DEFAULT_USER_ID = 1
 
     fun hasUsageStatsPermission(context: Context): Boolean {
         val packageManager = context.packageManager
@@ -61,36 +61,54 @@ object UsageStatsHelper {
         return usageStatsMap ?: emptyMap()
     }
 
-    fun getAppUsageData(context: Context): List<AppUsageDataTest> {
-        val appUsageDataList = mutableListOf<AppUsageDataTest>()
-        val usageStatsMap = getUsageStats(context)
-        val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    fun getAppUsageData(context: Context): List<AppUsageData> {
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE)
+            as UsageStatsManager
 
-        for ((packageName, usageStats) in usageStatsMap) {
-            val totalTimeInForegroundMillis = usageStats
-                .totalTimeInForeground
-            val lastTimeUsed = usageStats.lastTimeUsed
-            val firstTimeStamp = usageStats.firstTimeStamp
+        val calendar = Calendar.getInstance()
+        val endTime = calendar.timeInMillis
+        calendar.add(Calendar.DAY_OF_MONTH, -1)
+        val startTime = calendar.timeInMillis
 
-            val totalTimeInForegroundHours =
-                totalTimeInForegroundMillis / (1000 * 60 * 60)
-            val totalTimeInForegroundMinutes =
-                totalTimeInForegroundMillis / (1000 * 60)
+        return try {
+            val usageStatsMap =
+                usageStatsManager.queryAndAggregateUsageStats(startTime, endTime) ?: emptyMap()
 
-            val lastTimeUsedFormatted = dateFormat.format(Date(lastTimeUsed))
-            val firstTimeUsedFormatted = dateFormat.format(Date(firstTimeStamp))
+            usageStatsMap.values.mapNotNull { usageStats ->
+                if (usageStats.totalTimeInForeground > 0) {
+                    val dateFormat = SimpleDateFormat(
+                        "yyyy-MM-dd HH:mm:ss",
+                        Locale.getDefault()
+                    )
+                    val lastUsed = dateFormat.format(usageStats.lastTimeStamp)
+                    val firstUsed = dateFormat.format(usageStats.firstTimeStamp)
+                    val whenItWasUsed = Calendar.getInstance().apply {
+                        timeInMillis = usageStats.lastTimeUsed
+                    }.get(Calendar.HOUR_OF_DAY)
 
-            val appUsageData = AppUsageDataTest(
-                packageName,
-                totalTimeInForegroundHours,
-                totalTimeInForegroundMinutes,
-                lastTimeUsedFormatted,
-                firstTimeUsedFormatted
-            )
-            appUsageDataList.add(appUsageData)
-            Log.d(TAG, "AppUsageData: $appUsageData")
+                    AppUsageData(
+                        appId = 1,//TODO,
+                        lastTimeUsed = lastUsed,
+                        firstTimeUsed = firstUsed,
+                        totalTimeInHours = formatDuration(100),
+                        totalTimeInMinutes = formatDuration(101),
+                        userId = 1,
+                        id = 2
+                    )
+                } else {
+                    null
+                }
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security exception", e)
+            emptyList()
         }
-        return appUsageDataList
+    }
+    private fun formatDuration(millis: Long): Long {
+        val seconds = (millis / 1000) % 60
+        val minutes = (millis / (1000 * 60)) % 60
+        val hours = (millis / (1000 * 60 * 60))
+        return hours
     }
 }
 
