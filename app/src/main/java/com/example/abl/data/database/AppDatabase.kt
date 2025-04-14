@@ -1,5 +1,6 @@
 package com.example.abl.data.database
 
+import android.app.Application
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.example.abl.data.database.dao.AppInformationDao
@@ -14,6 +15,7 @@ import com.example.abl.data.database.entity.AppUsagePattern
 import com.example.abl.data.database.entity.Recommendations
 import com.example.abl.data.database.entity.RiskyApp
 import com.example.abl.data.database.entity.UserProfile
+import dagger.hilt.android.HiltAndroidApp
 
 @Database(
     entities = [AppInformation::class, AppUsageData::class,

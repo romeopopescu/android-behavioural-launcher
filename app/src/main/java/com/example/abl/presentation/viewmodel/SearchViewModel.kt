@@ -1,22 +1,26 @@
-package com.example.abl.ui
+package com.example.abl.presentation.viewmodel
 
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Drawable
-import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.ColumnInfo
-import androidx.room.PrimaryKey
-import com.example.abl.data.database.entity.AppInformation
+import com.example.abl.domain.usecases.AppInformationUseCases.GetAllAppsUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import java.util.UUID
+import javax.inject.Inject
 
-class SearchViewModel(private val context: Context): ViewModel() {
+@HiltViewModel
+class SearchViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val getAllAppsUseCase: GetAllAppsUseCase
+): ViewModel() {
     private val _searchText = MutableStateFlow("")
     val searchText = _searchText.asStateFlow()
 

@@ -1,22 +1,20 @@
-package com.example.abl.ui
+package com.example.abl.presentation.viewmodel
 
-import android.app.usage.UsageStatsManager
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.abl.data.AppRepository
 import com.example.abl.data.database.entity.AppUsageData
 import com.example.abl.utils.UsageStatsHelper
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@HiltViewModel
 class LauncherViewModel @Inject constructor(
-    private val appRepository: AppRepository,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ): ViewModel() {
     private val _appUsage = MutableStateFlow<List<AppUsageData>>(emptyList())
     val appUsage = _appUsage.asStateFlow()
@@ -27,9 +25,6 @@ class LauncherViewModel @Inject constructor(
             val usageDataList: List<AppUsageData> = UsageStatsHelper
                 .getAppUsageData(context)
 
-            for (app in usageDataList) {
-                appRepository.insertAppUsageData(app)
-            }
         }
     }
 }

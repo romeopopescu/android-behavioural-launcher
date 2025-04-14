@@ -5,12 +5,10 @@ package com.example.abl
 import android.content.ClipData
 import android.content.ClipDescription
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -48,7 +46,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -83,39 +80,28 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.abl.data.database.AppDatabase
-import com.example.abl.ui.SearchViewModelFactory
-import com.example.abl.ui.AppInformationTest
-import com.example.abl.ui.LauncherViewModel
-import com.example.abl.ui.LauncherViewModelFactory
-//import com.example.abl.ui.LauncherViewModel
-//import com.example.abl.ui.LauncherViewModelFactory
-import com.example.abl.ui.SearchViewModel
-import com.example.abl.ui.theme.AndroidLauncherForBehavouralProfileTheme
-import com.example.abl.utils.UsageStatsHelper
+import com.example.abl.presentation.viewmodel.AppInformationTest
+import com.example.abl.presentation.viewmodel.LauncherViewModel
+import com.example.abl.presentation.viewmodel.SearchViewModel
+import com.example.abl.presentation.theme.AndroidLauncherForBehavouralProfileTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
-
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private val viewModel: LauncherViewModel by viewModels {
-        LauncherViewModelFactory(this)
-    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (!UsageStatsHelper.hasUsageStatsPermission(this)) {
-            UsageStatsHelper.openUsageAccessSettings(this)
-        }
-        UsageStatsHelper.getUsageStats(this)
-        UsageStatsHelper.getAppUsageData(this)
-//        viewModel.appUsage
 
-//        AppDatabase db = new
         setContent {
             AndroidLauncherForBehavouralProfileTheme {
+                val viewModel = hiltViewModel<LauncherViewModel>()
                 LauncherScreen()
+
             }
         }
     }

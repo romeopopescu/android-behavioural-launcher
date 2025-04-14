@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.abl.data.database.entity.AppInformation
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AppInformationDao {
@@ -12,7 +13,7 @@ interface AppInformationDao {
     suspend fun insert(app: AppInformation)
 
     @Query("SELECT * FROM AppInformation")
-    suspend fun getAllApps(): List<AppInformation>
+    fun getAllApps(): Flow<List<AppInformation>>
 
     @Query("SELECT * FROM AppInformation WHERE appId = :id")
     suspend fun getAppById(id: Int): AppInformation
