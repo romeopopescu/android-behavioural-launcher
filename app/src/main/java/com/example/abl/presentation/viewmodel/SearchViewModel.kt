@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.abl.domain.usecases.AppInformationUseCases.GetAllAppsUseCase
+import com.example.abl.presentation.uimodel.SearchViewState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,19 +14,35 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val getAllAppsUseCase: GetAllAppsUseCase
 ): ViewModel() {
-    private val _searchText = MutableStateFlow("")
-    val searchText = _searchText.asStateFlow()
+//    private val _searchText = MutableStateFlow("")
+//    val searchText = _searchText.asStateFlow()
+//
+//    private val allApps = getInstalledApps(context)
+//    private val _apps = MutableStateFlow(allApps)
 
-    private val allApps = getInstalledApps(context)
-    private val _apps = MutableStateFlow(allApps)
+    private val _state = MutableStateFlow(SearchViewState())
+    val state = _state.asStateFlow()
+
+    init {
+        loadApps()
+    }
+
+    private fun loadApps() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            getAllAppsUseCase().
+        }
+    }
+
 
     val apps = searchText.combine(_apps) { text, apps ->
         if (text.isBlank()) {
