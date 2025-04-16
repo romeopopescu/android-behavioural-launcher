@@ -13,5 +13,4 @@ data class AppInformation(
     @PrimaryKey(autoGenerate = true) val appId: Int,
     val name: String,
     val packageName: String,
-    val icon: Int//make it int to store the resource id R.drawable.icon
 )

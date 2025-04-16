@@ -9,7 +9,7 @@ import javax.inject.Inject
 class GetAllAppsUseCase @Inject constructor(
     private val appInformationRepository: AppInformationRepository
 ) {
-    suspend operator fun invoke(): Flow<StateResources<List<AppInformation>>> {
+    suspend operator fun invoke(): Flow<List<AppInformation>> {
         return appInformationRepository.getAllApps()
     }
 }
