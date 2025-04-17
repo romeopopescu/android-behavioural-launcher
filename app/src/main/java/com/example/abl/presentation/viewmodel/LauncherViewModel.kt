@@ -14,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LauncherViewModel @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+
 ): ViewModel() {
     private val _appUsage = MutableStateFlow<List<AppUsageData>>(emptyList())
     val appUsage = _appUsage.asStateFlow()

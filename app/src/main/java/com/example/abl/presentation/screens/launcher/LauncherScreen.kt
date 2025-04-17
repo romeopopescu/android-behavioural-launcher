@@ -1,4 +1,4 @@
-package com.example.abl.presentation.screens
+package com.example.abl.presentation.screens.launcher
 
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
@@ -12,9 +12,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import com.example.abl.presentation.components.AppDrawer
+import com.example.abl.presentation.screens.home.HomeScreen
 
 @Composable
-fun LauncherScreen(modifier: Modifier = Modifier) {
+fun LauncherScreen(
+    onNavigateToUsageData: () -> Unit
+) {
     var showAppDrawer by remember { mutableStateOf(false) }
     val lazyListState = rememberLazyListState()
 
@@ -29,7 +32,7 @@ fun LauncherScreen(modifier: Modifier = Modifier) {
                 }
             }
     ) {
-        HomeScreen()
+        HomeScreen(onNavigateToUsageData)
         if (showAppDrawer) {
             AppDrawer(
                 lazyListState = lazyListState,

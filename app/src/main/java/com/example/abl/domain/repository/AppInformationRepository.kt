@@ -9,5 +9,5 @@ interface AppInformationRepository {
     fun getAllApps(): Flow<List<AppInformation>>
     suspend fun syncApps()
     fun getAppIcon(packageName: String): Drawable?
-    suspend fun launchApp(packageName: String): Boolean
+    suspend fun launchApp(packageName: String)
 }

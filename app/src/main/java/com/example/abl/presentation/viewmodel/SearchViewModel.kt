@@ -79,38 +79,3 @@ class SearchViewModel @Inject constructor(
         }
     }
 }
-
-data class AppInformationTest(
-    val name: String,
-    val packageName: String,
-    val icon: Drawable, //make it int to store the resource id R.drawable.icon
-    val id: String = UUID.randomUUID().toString()
-) {
-    fun doesMatchSearchQuery(query: String): Boolean {
-        val matchingCombinations = listOf(
-            name,
-            "${name.first()}"
-        )
-        return matchingCombinations.any {
-            it.contains(query, ignoreCase = true)
-        }
-    }
-}
-
-fun getInstalledApps(context: Context): List<AppInformationTest> {
-    val packageManager = context.packageManager
-
-    val intent = Intent(Intent.ACTION_MAIN).apply {
-        addCategory(Intent.CATEGORY_LAUNCHER)
-    }
-
-    val apps = packageManager.queryIntentActivities(intent, 0).map {
-        val appName = it.activityInfo.loadLabel(packageManager).toString()
-        val packageName = it.activityInfo.packageName
-        val icon = it.activityInfo.loadIcon(packageManager)
-
-        AppInformationTest(appName, packageName, icon)
-    }
-
-    return apps.sortedBy { it.name.lowercase() }
-}

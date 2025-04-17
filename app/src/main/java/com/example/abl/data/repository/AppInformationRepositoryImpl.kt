@@ -5,11 +5,11 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
+import android.health.connect.datatypes.AppInfo
 import com.example.abl.data.database.dao.AppInformationDao
 import com.example.abl.data.database.entity.AppInformation
 import com.example.abl.data.model.StateResources
 import com.example.abl.domain.repository.AppInformationRepository
-import com.example.abl.presentation.viewmodel.AppInformationTest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -23,36 +23,36 @@ class AppInformationRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val appInformationDao: AppInformationDao
 ) : AppInformationRepository {
-    
+
     override fun getAllApps(): Flow<List<AppInformation>> {
         return appInformationDao.getAllApps()
     }
 
     override suspend fun syncApps() {
         val packageManager = context.packageManager
-        val installedApps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-        
-        val currentApps = appInformationDao.getAllAppsSnapshot()
-        val currentPackages = currentApps.map { it.packageName }.toSet()
 
-        installedApps.forEach { appInfo ->
-            val packageName = appInfo.packageName
-            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-
-            if (launchIntent != null && (!currentPackages.contains(packageName) || (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0)) {
-                val app = AppInformation(
-                    appId = 0, // Will be auto-generated
-                    name = appInfo.loadLabel(packageManager).toString(),
-                    packageName = packageName
-                )
-                appInformationDao.insert(app)
-            }
+        val intent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
         }
-        
-        val installedPackages = installedApps.map { it.packageName }.toSet()
-        currentApps.forEach { app ->
-            if (!installedPackages.contains(app.packageName)) {
-                appInformationDao.deleteByPackageName(app.packageName)
+
+        val apps = appInformationDao.getAllAppsSnapshot()
+        var isFound = false
+
+        packageManager.queryIntentActivities(intent, 0).map {
+            val app = AppInformation(
+                appId = 0,
+                name = it.activityInfo.loadLabel(packageManager).toString(),
+                packageName = it.activityInfo.packageName
+            )
+            for (application in apps) {
+                if (application.packageName.equals(app.packageName)) {
+                    isFound = true
+                }
+            }
+            if (!isFound) {
+                appInformationDao.insert(app)
+            } else {
+                isFound = false
             }
         }
     }
@@ -65,18 +65,11 @@ class AppInformationRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun launchApp(packageName: String): Boolean {
-        return try {
-            val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-            if (intent != null) {
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
-                true
-            } else {
-                false
-            }
-        } catch (e: Exception) {
-            false
+    override suspend fun launchApp(packageName: String) {
+        val intent = context.packageManager.getLaunchIntentForPackage(packageName)
+        if (intent != null) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
         }
     }
 }

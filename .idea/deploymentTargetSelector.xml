@@ -15,7 +15,7 @@
       </SelectionState>
       <SelectionState runConfigName="android-behavioural-launcher.app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-04-16T09:35:06.901857425Z">
+        <DropdownSelection timestamp="2025-04-17T06:27:15.780368239Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="PhysicalDevice" identifier="serial=HQ645N12FC" />
