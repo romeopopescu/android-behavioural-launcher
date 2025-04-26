@@ -13,8 +13,8 @@ import androidx.compose.ui.Modifier
 
 @Composable
 fun AppUsageScreen(
-    onNavigateToMain: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateToMain: () -> Unit
+//    onNavigateBack: () -> Unit
 ) {
 //    Scaffold(
 //        topBar = CenterAlignedTopAppBar(

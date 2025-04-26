@@ -10,12 +10,12 @@ data object DataUsageDestination
 
 fun NavGraphBuilder.appUsageScreen(
     onNavigateToMain: () -> Unit,
-    onNavigateBack: () -> Unit
+//    onNavigateBack: () -> Unit
 ) {
     composable<DataUsageDestination> {
         AppUsageScreen(
-            onNavigateToMain = onNavigateToMain,
-            onNavigateBack = onNavigateBack
+            onNavigateToMain = onNavigateToMain
+//            onNavigateBack = onNavigateBack
         )
     }
 }
