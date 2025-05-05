@@ -7,7 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.ExperimentalFoundationApi
-import com.example.abl.presentation.theme.AndroidLauncherForBehavouralProfileTheme
+import com.example.abl.presentation.theme.AndroidLauncherForBehaviouralProfileTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -18,7 +18,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            AndroidLauncherForBehavouralProfileTheme {
+            AndroidLauncherForBehaviouralProfileTheme {
                 AppRoot()
             }
         }
