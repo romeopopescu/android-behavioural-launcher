@@ -105,4 +105,26 @@ class AppUsageRepositoryImpl @Inject constructor(
     override suspend fun getAllAppsSnapshot(): List<com.example.abl.data.database.entity.AppInformation> {
         return appInformationDao.getAllAppsSnapshot()
     }
+
+    suspend fun getTopAppsThisHour(topN: Int = 3): List<Pair<String, String>> { // returns List of (packageName, appName)
+        val calendar = Calendar.getInstance()
+        val endTime = calendar.timeInMillis
+        // Set to start of this hour
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val startTime = calendar.timeInMillis
+        val usageStatsList = usageStatsManager.queryUsageStats(
+            UsageStatsManager.INTERVAL_DAILY, startTime, endTime
+        )
+        val allApps = appInformationDao.getAllAppsSnapshot()
+        return usageStatsList
+            .filter { it.totalTimeInForeground > 0 }
+            .sortedByDescending { it.totalTimeInForeground }
+            .take(topN)
+            .mapNotNull { usage ->
+                val appInfo = allApps.find { it.packageName == usage.packageName }
+                if (appInfo != null) appInfo.packageName to appInfo.name else null
+            }
+    }
 }
