@@ -50,7 +50,8 @@ import com.example.abl.presentation.viewmodel.SearchViewModel
 @Composable
 fun AppDrawer(
     lazyListState: LazyListState,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onAppOpen: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -152,7 +153,10 @@ fun AppDrawer(
                         AppItem(
                             name = app.name,
                             icon = searchViewModel.getAppIcon(app.packageName),
-                            onClick = { searchViewModel.launchApp(app.packageName) }
+                            onClick = {
+                                searchViewModel.launchApp(app.packageName)
+                                onAppOpen()
+                            }
                         )
                     }
                 }

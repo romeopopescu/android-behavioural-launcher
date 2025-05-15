@@ -8,14 +8,22 @@ import android.content.pm.PackageManager
 import android.provider.Settings
 import android.util.Log
 import com.example.abl.data.database.entity.AppUsageData
+import com.example.abl.data.database.dao.AppUsageDataDao
+import com.example.abl.data.database.dao.AppInformationDao
+import com.example.abl.data.database.dao.UserProfileDao
+import com.example.abl.data.database.entity.UserProfile
 import com.example.abl.domain.repository.AppUsageRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import java.util.Calendar
 import javax.inject.Inject
 
 class AppUsageRepositoryImpl @Inject constructor(
-   @ApplicationContext private val context: Context
+   @ApplicationContext private val context: Context,
+   private val appUsageDataDao: AppUsageDataDao,
+   private val appInformationDao: AppInformationDao,
+    private val userProfileDao: UserProfileDao,
 ) : AppUsageRepository {
     private val usageStatsManager = context
         .getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -41,7 +49,12 @@ class AppUsageRepositoryImpl @Inject constructor(
     override fun getUsageStats(): Map<String, UsageStats> {
         val calendar = Calendar.getInstance()
         val endTime = calendar.timeInMillis
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
+
+        // Set calendar to today at midnight
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
         val startTime = calendar.timeInMillis
 
         val usageStatsMap = usageStatsManager
@@ -52,9 +65,44 @@ class AppUsageRepositoryImpl @Inject constructor(
         return usageStatsMap ?: emptyMap()
     }
 
-    override fun getAppUsageData(): List<Flow<AppUsageData>> {
-        TODO("Not yet implemented")
+    override suspend fun getAppUsageData(): List<Flow<AppUsageData>> {
+        val usageList = appUsageDataDao.getAllAppUsageData()
+        return usageList.map { usageData ->
+            flow { emit(usageData) }
+        }
     }
 
+    override suspend fun insertAppUsageData(appUsageData: AppUsageData) {
+        appUsageDataDao.insert(appUsageData)
+    }
 
+    override suspend fun syncAndInsertAppUsageData(userId: Int) {
+
+        val userProfile = UserProfile(1, "What's your dogs name", "kiki")
+        userProfileDao.insert(userProfile)
+        val usageStatsMap = getUsageStats()
+        val allApps = appInformationDao.getAllAppsSnapshot()
+        usageStatsMap.values.forEach { usageStats ->
+            val appInfo = allApps.find { it.packageName == usageStats.packageName }
+            val appId = appInfo?.appId ?: return@forEach
+            val totalTimeInMinutes = (usageStats.totalTimeInForeground / 60000) % 60
+            val totalTimeInHours = usageStats.totalTimeInForeground / 3600000
+            if (totalTimeInMinutes > 0 || totalTimeInHours > 0) {
+                val appUsageData = com.example.abl.data.database.entity.AppUsageData(
+                    id = 0, // auto-generate
+                    userId = userId,
+                    appId = appId,
+                    totalTimeInHours = totalTimeInHours,
+                    totalTimeInMinutes = totalTimeInMinutes,
+                    lastTimeUsed = usageStats.lastTimeUsed.toString(),
+                    firstTimeUsed = usageStats.firstTimeStamp.toString()
+                )
+                appUsageDataDao.insert(appUsageData)
+            }
+        }
+    }
+
+    override suspend fun getAllAppsSnapshot(): List<com.example.abl.data.database.entity.AppInformation> {
+        return appInformationDao.getAllAppsSnapshot()
+    }
 }

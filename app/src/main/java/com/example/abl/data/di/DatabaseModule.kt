@@ -8,7 +8,9 @@ import com.example.abl.data.database.dao.AppUsageDataDao
 import com.example.abl.data.database.dao.RiskyAppDao
 import com.example.abl.data.database.dao.UserProfileDao
 import com.example.abl.data.repository.AppInformationRepositoryImpl
+import com.example.abl.data.repository.AppUsageRepositoryImpl
 import com.example.abl.domain.repository.AppInformationRepository
+import com.example.abl.domain.repository.AppUsageRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -25,6 +27,12 @@ abstract class DatabaseModule {
     abstract fun bindAppInformationRepository(
         appInformationRepositoryImpl: AppInformationRepositoryImpl
     ): AppInformationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAppUsageRepository(
+        impl: AppUsageRepositoryImpl
+    ): AppUsageRepository
 
     companion object {
 

@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import com.example.abl.presentation.components.AppDrawer
 import com.example.abl.presentation.screens.home.HomeScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.abl.presentation.viewmodel.SearchViewModel
 
 @Composable
 fun LauncherScreen(
@@ -20,6 +22,12 @@ fun LauncherScreen(
 ) {
     var showAppDrawer by remember { mutableStateOf(false) }
     val lazyListState = rememberLazyListState()
+    val searchViewModel: SearchViewModel = hiltViewModel()
+
+    fun closeDrawerAndResetSearch() {
+        showAppDrawer = false
+        searchViewModel.deleteSearch()
+    }
 
     Box (
         modifier = Modifier
@@ -36,7 +44,8 @@ fun LauncherScreen(
         if (showAppDrawer) {
             AppDrawer(
                 lazyListState = lazyListState,
-                onDismiss = { showAppDrawer = false }
+                onDismiss = { closeDrawerAndResetSearch() },
+                onAppOpen = { closeDrawerAndResetSearch() }
             )
         }
     }
