@@ -38,6 +38,13 @@ class AppInformationRepositoryImpl @Inject constructor(
         val apps = appInformationDao.getAllAppsSnapshot()
         var isFound = false
 
+        val installedPackages = packageManager.getInstalledPackages(0).map { it.packageName }.toSet()
+        apps.forEach { app ->
+            if (app.packageName !in installedPackages) {
+                appInformationDao.deleteByPackageName(app.packageName)
+            }
+        }
+
         packageManager.queryIntentActivities(intent, 0).map {
             val app = AppInformation(
                 appId = 0,

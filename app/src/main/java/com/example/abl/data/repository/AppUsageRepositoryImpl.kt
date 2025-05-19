@@ -49,8 +49,7 @@ class AppUsageRepositoryImpl @Inject constructor(
     override fun getUsageStats(): Map<String, UsageStats> {
         val calendar = Calendar.getInstance()
         val endTime = calendar.timeInMillis
-
-        // Set calendar to today at midnight
+        
         calendar.set(Calendar.HOUR_OF_DAY, 0)
         calendar.set(Calendar.MINUTE, 0)
         calendar.set(Calendar.SECOND, 0)
@@ -103,13 +102,15 @@ class AppUsageRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllAppsSnapshot(): List<com.example.abl.data.database.entity.AppInformation> {
-        return appInformationDao.getAllAppsSnapshot()
+        val myPackageName = context.packageName
+        return appInformationDao.getAllAppsSnapshot().filter { it.packageName != myPackageName }
     }
 
     suspend fun getTopAppsThisHour(topN: Int = 3): List<Pair<String, String>> { // returns List of (packageName, appName)
+        val myPackageName = context.packageName
         val calendar = Calendar.getInstance()
         val endTime = calendar.timeInMillis
-        // Set to start of this hour
+        
         calendar.set(Calendar.MINUTE, 0)
         calendar.set(Calendar.SECOND, 0)
         calendar.set(Calendar.MILLISECOND, 0)
@@ -117,9 +118,9 @@ class AppUsageRepositoryImpl @Inject constructor(
         val usageStatsList = usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_DAILY, startTime, endTime
         )
-        val allApps = appInformationDao.getAllAppsSnapshot()
+        val allApps = appInformationDao.getAllAppsSnapshot().filter { it.packageName != myPackageName }
         return usageStatsList
-            .filter { it.totalTimeInForeground > 0 }
+            .filter { it.totalTimeInForeground > 0 && it.packageName != myPackageName }
             .sortedByDescending { it.totalTimeInForeground }
             .take(topN)
             .mapNotNull { usage ->

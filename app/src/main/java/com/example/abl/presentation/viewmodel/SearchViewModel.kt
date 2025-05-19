@@ -22,7 +22,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val appInformationRepository: AppInformationRepository
+    private val appInformationRepository: AppInformationRepository,
+    @ApplicationContext private val context: Context
 ): ViewModel() {
     private val _searchText = MutableStateFlow("")
     val searchText = _searchText.asStateFlow()
@@ -47,10 +48,12 @@ class SearchViewModel @Inject constructor(
     }
 
     val apps = searchText.combine(appInformationRepository.getAllApps()) { text, apps ->
+        val myPackageName = context.packageName
+        val filteredApps = apps.filter { it.packageName != myPackageName }
         if (text.isBlank()) {
-            apps
+            filteredApps
         } else {
-            apps.filter { app ->
+            filteredApps.filter { app ->
                 app.name.contains(text, ignoreCase = true) // ||
 //                app.packageName.contains(text, ignoreCase = true)
             }

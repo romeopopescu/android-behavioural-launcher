@@ -53,6 +53,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.core.graphics.drawable.toBitmap
+import android.app.usage.UsageStatsManager
+import com.example.abl.presentation.viewmodel.AppUsageDisplay
+import java.util.Calendar
 
 @RequiresApi(Build.VERSION_CODES.P)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,17 +64,49 @@ fun AppUsageScreen(
     onNavigateToMain: () -> Unit
 //    onNavigateBack: () -> Unit
 ) {
-    val viewModel: AppUsageViewModel = hiltViewModel()
-    val appUsageList = viewModel.appUsageList.collectAsState().value
-
     val context = LocalContext.current
     val packageManager = context.packageManager
 
-    LaunchedEffect(Unit) {
-        viewModel.syncUsageData(userId = 1)
+    // Query UsageStatsManager for today
+    val calendar = remember { Calendar.getInstance() }
+    val endTime = remember { calendar.timeInMillis }
+    calendar.set(Calendar.HOUR_OF_DAY, 0)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
+    val startTime = remember { calendar.timeInMillis }
+    val usageStatsManager = context.getSystemService(android.content.Context.USAGE_STATS_SERVICE) as UsageStatsManager
+    val usageStatsList = remember(startTime to endTime) {
+        usageStatsManager.queryUsageStats(
+            UsageStatsManager.INTERVAL_DAILY, startTime, endTime
+        )
     }
-
-    val totalMinutes = appUsageList.sumOf { it.totalTimeInHours * 60 + it.totalTimeInMinutes }
+    val myPackageName = context.packageName
+    val appUsages = remember {
+        usageStatsList
+            .filter { it.totalTimeInForeground > 0 && it.packageName != myPackageName }
+            .map { usage ->
+                val appName = try {
+                    val appInfo = packageManager.getApplicationInfo(usage.packageName, 0)
+                    packageManager.getApplicationLabel(appInfo).toString()
+                } catch (e: Exception) { usage.packageName }
+                val icon = try {
+                    val drawable = packageManager.getApplicationIcon(usage.packageName)
+                    drawableToImageBitmap(drawable)
+                } catch (e: Exception) { null }
+                val totalMinutes = (usage.totalTimeInForeground / 60000) % 60
+                val totalHours = usage.totalTimeInForeground / 3600000
+                AppUsageDisplay(
+                    appName = appName,
+                    totalTimeInHours = totalHours,
+                    totalTimeInMinutes = totalMinutes,
+                    lastTimeUsed = usage.lastTimeUsed.toString(),
+                    firstTimeUsed = usage.firstTimeStamp.toString(),
+                    icon = icon
+                )
+            }
+    }
+    val totalMinutes = appUsages.sumOf { it.totalTimeInHours * 60 + it.totalTimeInMinutes }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(title = { Text("Digital Wellbeing", fontWeight = FontWeight.Bold) })
@@ -86,7 +121,7 @@ fun AppUsageScreen(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(appUsageList.sortedByDescending { it.totalTimeInHours * 60 + it.totalTimeInMinutes }) { usage ->
+            items(appUsages.sortedByDescending { it.totalTimeInHours * 60 + it.totalTimeInMinutes }) { usage ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
