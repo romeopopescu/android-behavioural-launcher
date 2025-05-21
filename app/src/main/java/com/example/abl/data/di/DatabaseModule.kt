@@ -6,6 +6,7 @@ import com.example.abl.data.database.AppDatabase
 import com.example.abl.data.database.dao.AppInformationDao
 import com.example.abl.data.database.dao.AppUsageDataDao
 import com.example.abl.data.database.dao.RiskyAppDao
+import com.example.abl.data.database.dao.TimedAppUsageStatDao
 import com.example.abl.data.database.dao.UserProfileDao
 import com.example.abl.data.repository.AppInformationRepositoryImpl
 import com.example.abl.data.repository.AppUsageRepositoryImpl
@@ -68,6 +69,12 @@ abstract class DatabaseModule {
         @Provides
         fun provideRiskyAppDao(database: AppDatabase): RiskyAppDao {
             return database.riskyAppDao()
+        }
+
+        @Singleton
+        @Provides
+        fun provideTimedAppUsageStatDao(database: AppDatabase): TimedAppUsageStatDao {
+            return database.timedAppUsageStatDao()
         }
     }
 }

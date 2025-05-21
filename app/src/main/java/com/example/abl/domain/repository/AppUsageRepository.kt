@@ -13,4 +13,10 @@ interface AppUsageRepository {
     suspend fun insertAppUsageData(appUsageData: AppUsageData)
     suspend fun syncAndInsertAppUsageData(userId: Int)
     suspend fun getAllAppsSnapshot(): List<com.example.abl.data.database.entity.AppInformation>
+
+    // New method for recording detailed, timed usage statistics
+    suspend fun recordDetailedUsageStats()
+
+    // New method for getting top apps based on timed usage stats for the current time slot
+    suspend fun getTopAppsForCurrentTimeSlot(limit: Int): List<com.example.abl.data.database.dao.TimedAppUsageStatDao.AppUsageTimeSlotSummary>
 }

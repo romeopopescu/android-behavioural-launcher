@@ -21,6 +21,9 @@ interface AppInformationDao {
     @Query("SELECT * FROM AppInformation")
     suspend fun getAllAppsSnapshot(): List<AppInformation>
 
+    @Query("SELECT * FROM AppInformation WHERE packageName = :packageName")
+    suspend fun getAppByPackageName(packageName: String): AppInformation?
+
     @Query("DELETE FROM AppInformation WHERE packageName = :packageName")
     suspend fun deleteByPackageName(packageName: String)
 }
