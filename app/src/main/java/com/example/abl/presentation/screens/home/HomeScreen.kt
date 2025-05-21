@@ -23,6 +23,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
+import com.example.abl.presentation.viewmodel.SearchViewModel
+import com.example.abl.presentation.viewmodel.SearchViewModel_HiltModules
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -31,6 +36,7 @@ fun HomeScreen(
 ) {
     val launcherViewModel: LauncherViewModel = hiltViewModel()
     val recommendedApps = launcherViewModel.recommendedApps.collectAsState().value
+    val searchViewModel: SearchViewModel = hiltViewModel()
 
     LaunchedEffect(Unit) {
         launcherViewModel.loadRecommendedApps()
@@ -48,11 +54,17 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(24.dp))
         if (recommendedApps.isNotEmpty()) {
             Text("Recommended for you", color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
-            Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.Top
+            ) {
                 recommendedApps.forEach { app ->
                     Column(
-                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(end = 24.dp)
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp)
+                            .clickable { searchViewModel.launchApp(app.packageName) }
                     ) {
                         if (app.icon != null) {
                             Image(

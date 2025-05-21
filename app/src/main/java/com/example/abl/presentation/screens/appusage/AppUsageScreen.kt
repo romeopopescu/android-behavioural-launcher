@@ -76,34 +76,58 @@ fun AppUsageScreen(
     calendar.set(Calendar.MILLISECOND, 0)
     val startTime = remember { calendar.timeInMillis }
     val usageStatsManager = context.getSystemService(android.content.Context.USAGE_STATS_SERVICE) as UsageStatsManager
-    val usageStatsList = remember(startTime to endTime) {
+    val usageStatsList = remember(startTime, endTime) { // startTime and endTime are stable for this composition
         usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_DAILY, startTime, endTime
         )
     }
     val myPackageName = context.packageName
-    val appUsages = remember {
-        usageStatsList
+
+    val appUsages = remember(usageStatsList, packageManager, myPackageName) {
+        val processedStats = usageStatsList
             .filter { it.totalTimeInForeground > 0 && it.packageName != myPackageName }
-            .map { usage ->
-                val appName = try {
-                    val appInfo = packageManager.getApplicationInfo(usage.packageName, 0)
-                    packageManager.getApplicationLabel(appInfo).toString()
-                } catch (e: Exception) { usage.packageName }
-                val icon = try {
-                    val drawable = packageManager.getApplicationIcon(usage.packageName)
-                    drawableToImageBitmap(drawable)
-                } catch (e: Exception) { null }
-                val totalMinutes = (usage.totalTimeInForeground / 60000) % 60
-                val totalHours = usage.totalTimeInForeground / 3600000
-                AppUsageDisplay(
-                    appName = appName,
-                    totalTimeInHours = totalHours,
-                    totalTimeInMinutes = totalMinutes,
-                    lastTimeUsed = usage.lastTimeUsed.toString(),
-                    firstTimeUsed = usage.firstTimeStamp.toString(),
-                    icon = icon
-                )
+            .mapNotNull { usageStats ->
+                try {
+                    val appInfo = packageManager.getApplicationInfo(usageStats.packageName, 0)
+                    val appName = packageManager.getApplicationLabel(appInfo).toString()
+                    val iconDrawable = packageManager.getApplicationIcon(usageStats.packageName)
+                    val iconBitmap = drawableToImageBitmap(iconDrawable)
+
+                    // Anonymous object to hold intermediate data
+                    object {
+                        val appName = appName
+                        // val packageName = usageStats.packageName // Kept for potential future use (e.g. unique keys)
+                        val totalTimeInForeground = usageStats.totalTimeInForeground
+                        val lastTimeUsed = usageStats.lastTimeUsed
+                        val firstTimeStamp = usageStats.firstTimeStamp
+                        val icon = iconBitmap
+                    }
+                } catch (e: PackageManager.NameNotFoundException) {
+                    null // Skip if app info cannot be fetched (e.g., app uninstalled during processing)
+                }
+            }
+
+        // Group by appName and then select the entry with max usage within each group
+        processedStats
+            .groupBy { it.appName }
+            .mapNotNull { (appName, group) -> // group is List of the anonymous objects
+                // Find the entry with the maximum totalTimeInForeground in this group
+                val primaryEntry = group.maxByOrNull { it.totalTimeInForeground }
+
+                primaryEntry?.let { entry ->
+                    val totalTime = entry.totalTimeInForeground // Use time from the primary entry
+                    val totalMinutes = (totalTime / 60000) % 60
+                    val totalHours = totalTime / 3600000
+
+                    AppUsageDisplay(
+                        appName = appName, // appName is the group key
+                        totalTimeInHours = totalHours,
+                        totalTimeInMinutes = totalMinutes,
+                        lastTimeUsed = entry.lastTimeUsed.toString(), // Use from primary entry
+                        firstTimeUsed = entry.firstTimeStamp.toString(), // Use from primary entry
+                        icon = entry.icon // Use icon from primary entry
+                    )
+                }
             }
     }
     val totalMinutes = appUsages.sumOf { it.totalTimeInHours * 60 + it.totalTimeInMinutes }
@@ -170,6 +194,7 @@ fun AppUsageScreen(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 fun drawableToImageBitmap(drawable: Drawable): ImageBitmap? {
     return try {
         when (drawable) {

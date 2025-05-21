@@ -35,31 +35,29 @@ class AppInformationRepositoryImpl @Inject constructor(
             addCategory(Intent.CATEGORY_LAUNCHER)
         }
 
-        val apps = appInformationDao.getAllAppsSnapshot()
-        var isFound = false
-
+        val existingApps = appInformationDao.getAllAppsSnapshot()
         val installedPackages = packageManager.getInstalledPackages(0).map { it.packageName }.toSet()
-        apps.forEach { app ->
+        
+        // Remove uninstalled apps
+        existingApps.forEach { app ->
             if (app.packageName !in installedPackages) {
                 appInformationDao.deleteByPackageName(app.packageName)
             }
         }
 
-        packageManager.queryIntentActivities(intent, 0).map {
-            val app = AppInformation(
-                appId = 0,
-                name = it.activityInfo.loadLabel(packageManager).toString(),
-                packageName = it.activityInfo.packageName
-            )
-            for (application in apps) {
-                if (application.packageName.equals(app.packageName)) {
-                    isFound = true
-                }
-            }
-            if (!isFound) {
+        // Create a set of existing package names for faster lookup
+        val existingPackageNames = existingApps.map { it.packageName }.toSet()
+
+        // Add only new apps
+        packageManager.queryIntentActivities(intent, 0).forEach {
+            val packageName = it.activityInfo.packageName
+            if (packageName !in existingPackageNames) {
+                val app = AppInformation(
+                    appId = 0,
+                    name = it.activityInfo.loadLabel(packageManager).toString(),
+                    packageName = packageName
+                )
                 appInformationDao.insert(app)
-            } else {
-                isFound = false
             }
         }
     }
