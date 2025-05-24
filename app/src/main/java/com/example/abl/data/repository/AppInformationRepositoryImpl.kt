@@ -77,8 +77,4 @@ class AppInformationRepositoryImpl @Inject constructor(
             context.startActivity(intent)
         }
     }
-
-    override suspend fun getAppByPackageName(packageName: String): AppInformation? {
-        return appInformationDao.getAppByPackageName(packageName)
-    }
 }

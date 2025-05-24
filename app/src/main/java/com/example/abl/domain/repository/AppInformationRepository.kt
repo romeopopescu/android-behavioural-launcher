@@ -10,5 +10,4 @@ interface AppInformationRepository {
     suspend fun syncApps()
     fun getAppIcon(packageName: String): Drawable?
     suspend fun launchApp(packageName: String)
-    suspend fun getAppByPackageName(packageName: String): AppInformation?
 }

@@ -3,6 +3,8 @@ package com.example.abl.presentation.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.abl.data.database.entity.AppUsageData
+import com.example.abl.utils.UsageStatsHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,16 +18,16 @@ import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.util.Log
-import com.example.abl.domain.repository.AppInformationRepository
-import com.example.abl.domain.repository.AppUsageRepository
+import com.example.abl.data.database.dao.AppInformationDao
+import com.example.abl.data.repository.AppUsageRepositoryImpl
 
 @HiltViewModel
 class LauncherViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val appUsageRepository: AppUsageRepository,
-    private val appInformationRepository: AppInformationRepository
+    private val appUsageRepositoryImpl: AppUsageRepositoryImpl
 ): ViewModel() {
+    private val _appUsage = MutableStateFlow<List<AppUsageData>>(emptyList())
+    val appUsage = _appUsage.asStateFlow()
     private val TAG = "LauncherViewModel"
 
     private val _recommendedApps = MutableStateFlow<List<RecommendedApp>>(emptyList())
@@ -33,31 +35,26 @@ class LauncherViewModel @Inject constructor(
 
     data class RecommendedApp(val packageName: String, val appName: String, val icon: ImageBitmap?)
 
+    fun loadAppUsage() {
+        viewModelScope.launch {
+            val usageDataList: List<AppUsageData> = UsageStatsHelper
+                .getAppUsageData(context)
+
+        }
+    }
+
     fun loadRecommendedApps() {
         viewModelScope.launch {
-            Log.d(TAG, "Loading recommended apps based on timed usage stats.")
-            try {
-                val topAppSummaries = appUsageRepository.getTopAppsForCurrentTimeSlot(3)
-                Log.d(TAG, "Received ${topAppSummaries.size} app summaries from repository.")
-
-                val recs = topAppSummaries.mapNotNull { summary ->
-                    val appInfo = appInformationRepository.getAppByPackageName(summary.packageName)
-                    if (appInfo != null) {
-                        val iconDrawable = appInformationRepository.getAppIcon(summary.packageName)
-                        val iconBitmap = iconDrawable?.let { drawableToImageBitmap(it) }
-                        Log.d(TAG, "Mapping app: ${appInfo.name}, Icon found: ${iconBitmap != null}")
-                        RecommendedApp(appInfo.packageName, appInfo.name, iconBitmap)
-                    } else {
-                        Log.w(TAG, "AppInfo not found for package: ${summary.packageName}")
-                        null
-                    }
-                }
-                _recommendedApps.value = recs
-                Log.d(TAG, "Updated recommended apps. Count: ${recs.size}")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error loading recommended apps: ", e)
-                _recommendedApps.value = emptyList()
+            val pm = context.packageManager
+            val topApps = appUsageRepositoryImpl.getTopAppsThisHour(3)
+            val recs = topApps.map { (packageName, appName) ->
+                val icon: ImageBitmap? = try {
+                    val drawable = pm.getApplicationIcon(packageName)
+                    drawableToImageBitmap(drawable)
+                } catch (e: Exception) { null }
+                RecommendedApp(packageName, appName, icon)
             }
+            _recommendedApps.value = recs
         }
     }
 
@@ -76,7 +73,6 @@ class LauncherViewModel @Inject constructor(
                 else -> null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error converting drawable to ImageBitmap", e)
             null
         }
     }

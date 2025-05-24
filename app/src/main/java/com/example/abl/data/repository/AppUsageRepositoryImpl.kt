@@ -5,16 +5,12 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.provider.Settings
 import android.util.Log
-import androidx.annotation.RequiresApi
 import com.example.abl.data.database.entity.AppUsageData
 import com.example.abl.data.database.dao.AppUsageDataDao
 import com.example.abl.data.database.dao.AppInformationDao
-import com.example.abl.data.database.dao.TimedAppUsageStatDao
 import com.example.abl.data.database.dao.UserProfileDao
-import com.example.abl.data.database.entity.TimedAppUsageStat
 import com.example.abl.data.database.entity.UserProfile
 import com.example.abl.domain.repository.AppUsageRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -28,7 +24,6 @@ class AppUsageRepositoryImpl @Inject constructor(
    private val appUsageDataDao: AppUsageDataDao,
    private val appInformationDao: AppInformationDao,
     private val userProfileDao: UserProfileDao,
-    private val timedAppUsageStatDao: TimedAppUsageStatDao
 ) : AppUsageRepository {
     private val usageStatsManager = context
         .getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -109,55 +104,6 @@ class AppUsageRepositoryImpl @Inject constructor(
     override suspend fun getAllAppsSnapshot(): List<com.example.abl.data.database.entity.AppInformation> {
         val myPackageName = context.packageName
         return appInformationDao.getAllAppsSnapshot().filter { it.packageName != myPackageName }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.P)
-    override suspend fun recordDetailedUsageStats() {
-        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val calendar = Calendar.getInstance()
-        val endTime = calendar.timeInMillis
-        calendar.add(Calendar.HOUR_OF_DAY, -1)
-        val startTime = calendar.timeInMillis
-
-        val usageStatsList = usageStatsManager.queryUsageStats(
-            UsageStatsManager.INTERVAL_DAILY,
-            startTime,
-            endTime
-        )
-
-        val detailedStatsToInsert = mutableListOf<TimedAppUsageStat>()
-        val myPackageName = context.packageName
-
-        usageStatsList.forEach { stats ->
-            if (stats.totalTimeInForeground > 0 && stats.packageName != myPackageName) {
-                val usageCalendar = Calendar.getInstance().apply { timeInMillis = stats.lastTimeUsed }
-                
-                if (stats.lastTimeUsed >= startTime && stats.lastTimeUsed <= endTime) {
-                    detailedStatsToInsert.add(
-                        TimedAppUsageStat(
-                            packageName = stats.packageName,
-                            usageTimestamp = stats.lastTimeUsed,
-                            durationMillis = stats.totalTimeInForeground,
-                            dayOfWeek = usageCalendar.get(Calendar.DAY_OF_WEEK),
-                            hourOfDay = usageCalendar.get(Calendar.HOUR_OF_DAY)
-                        )
-                    )
-                }
-            }
-        }
-
-        if (detailedStatsToInsert.isNotEmpty()) {
-            Log.d("AppUsageRepository", "Inserting ${detailedStatsToInsert.size} detailed usage stats.")
-            timedAppUsageStatDao.insertAll(detailedStatsToInsert)
-        }
-    }
-
-    override suspend fun getTopAppsForCurrentTimeSlot(limit: Int): List<com.example.abl.data.database.dao.TimedAppUsageStatDao.AppUsageTimeSlotSummary> {
-        val calendar = Calendar.getInstance()
-        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-        val hourOfDay = calendar.get(Calendar.HOUR_OF_DAY)
-        Log.d("AppUsageRepository", "Getting top $limit apps for Day: $dayOfWeek, Hour: $hourOfDay")
-        return timedAppUsageStatDao.getTopAppsForTimeSlot(dayOfWeek, hourOfDay, limit)
     }
 
     suspend fun getTopAppsThisHour(topN: Int = 3): List<Pair<String, String>> { // returns List of (packageName, appName)
