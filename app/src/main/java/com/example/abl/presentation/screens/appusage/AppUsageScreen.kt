@@ -132,7 +132,7 @@ fun AppUsageScreen(
     val totalMinutes = appUsages.sumOf { it.totalTimeInHours * 60 + it.totalTimeInMinutes }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text("Digital Wellbeing", fontWeight = FontWeight.Bold) })
+        TopAppBar(title = { Text("App Usage Time in Past 24hrs", fontWeight = FontWeight.Bold) })
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = "Most used apps",

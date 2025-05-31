@@ -110,4 +110,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // Charty
+//    implementation("com.himanshoe:charty:2.1.0-beta03.2")
 }

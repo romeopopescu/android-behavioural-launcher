@@ -18,7 +18,8 @@ import com.example.abl.presentation.viewmodel.SearchViewModel
 
 @Composable
 fun LauncherScreen(
-    onNavigateToUsageData: () -> Unit
+    onNavigateToUsageData: () -> Unit,
+    onNavigateToStatsPage: () -> Unit
 ) {
     var showAppDrawer by remember { mutableStateOf(false) }
     val lazyListState = rememberLazyListState()
@@ -40,7 +41,7 @@ fun LauncherScreen(
                 }
             }
     ) {
-        HomeScreen(onNavigateToUsageData)
+        HomeScreen(onNavigateToUsageData, onNavigateToStatsPage)
         if (showAppDrawer) {
             AppDrawer(
                 lazyListState = lazyListState,

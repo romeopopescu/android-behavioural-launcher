@@ -8,11 +8,13 @@ import kotlinx.serialization.Serializable
 data object LauncherDestination
 
 fun NavGraphBuilder.launcherScreen(
-    onNavigateToUsageStats: () -> Unit
+    onNavigateToUsageStats: () -> Unit,
+    onNavigateToStatsPage: () -> Unit
 ) {
     composable<LauncherDestination> {
         LauncherScreen(
-            onNavigateToUsageData = onNavigateToUsageStats
+            onNavigateToUsageData = onNavigateToUsageStats,
+            onNavigateToStatsPage = onNavigateToStatsPage
         )
     }
 } 

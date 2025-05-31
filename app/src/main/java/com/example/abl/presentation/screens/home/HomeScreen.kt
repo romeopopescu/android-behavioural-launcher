@@ -32,7 +32,8 @@ import com.example.abl.presentation.viewmodel.SearchViewModel_HiltModules
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
-    onNavigateToUsageStats: () -> Unit
+    onNavigateToUsageStats: () -> Unit,
+    onNavigateToStatsPage: () -> Unit
 ) {
     val launcherViewModel: LauncherViewModel = hiltViewModel()
     val recommendedApps = launcherViewModel.recommendedApps.collectAsState().value
@@ -52,6 +53,11 @@ fun HomeScreen(
             onClick = onNavigateToUsageStats
         ) {
             Text("App Usage")
+        }
+        Button(
+            onClick = onNavigateToStatsPage
+        ) {
+            Text("Stats")
         }
         Spacer(modifier = Modifier.height(24.dp))
         if (recommendedApps.isNotEmpty()) {
