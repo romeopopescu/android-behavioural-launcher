@@ -67,7 +67,6 @@ fun AppUsageScreen(
     val context = LocalContext.current
     val packageManager = context.packageManager
 
-    // Query UsageStatsManager for today
     val calendar = remember { Calendar.getInstance() }
     val endTime = remember { calendar.timeInMillis }
     calendar.set(Calendar.HOUR_OF_DAY, 0)
