@@ -20,6 +20,6 @@ import androidx.room.PrimaryKey
 data class RiskyApp (
     @PrimaryKey(autoGenerate = true) val id: Int,
     val appId: Int,
-    val reason: String,
-    val riskLevel: Int
+    val packageName: String,
+    val riskScore: Int
 )

@@ -38,17 +38,14 @@ class AppInformationRepositoryImpl @Inject constructor(
         val existingApps = appInformationDao.getAllAppsSnapshot()
         val installedPackages = packageManager.getInstalledPackages(0).map { it.packageName }.toSet()
         
-        // Remove uninstalled apps
         existingApps.forEach { app ->
             if (app.packageName !in installedPackages) {
                 appInformationDao.deleteByPackageName(app.packageName)
             }
         }
 
-        // Create a set of existing package names for faster lookup
         val existingPackageNames = existingApps.map { it.packageName }.toSet()
 
-        // Add only new apps
         packageManager.queryIntentActivities(intent, 0).forEach {
             val packageName = it.activityInfo.packageName
             if (packageName !in existingPackageNames) {

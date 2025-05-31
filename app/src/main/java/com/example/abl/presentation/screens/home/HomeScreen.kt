@@ -37,9 +37,11 @@ fun HomeScreen(
     val launcherViewModel: LauncherViewModel = hiltViewModel()
     val recommendedApps = launcherViewModel.recommendedApps.collectAsState().value
     val searchViewModel: SearchViewModel = hiltViewModel()
+    val riskyApps = launcherViewModel.riskyApps.collectAsState().value
 
     LaunchedEffect(Unit) {
         launcherViewModel.loadRecommendedApps()
+        launcherViewModel.loadRiskyApps()
     }
 
     Column(
@@ -77,6 +79,39 @@ fun HomeScreen(
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(app.appName, color = Color.Black)
+                    }
+                }
+            }
+            Divider(modifier = Modifier.padding(vertical = 16.dp))
+        }
+        if (riskyApps.isNotEmpty()) {
+            Text("Top 3 Risky Apps", color = Color.Red, modifier = Modifier.padding(bottom = 8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.Top
+            ) {
+                riskyApps.forEach { app ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp)
+                            .clickable { searchViewModel.launchApp(app.packageName) }
+                    ) {
+                        if (app.icon != null) {
+                            Image(
+                                bitmap = app.icon,
+                                contentDescription = app.appName,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.size(48.dp))
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(app.appName, color = Color.Black)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Risk: ${app.riskScore}", color = Color.Black)
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
                 }
             }
