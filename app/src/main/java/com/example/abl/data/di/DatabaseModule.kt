@@ -5,13 +5,18 @@ import androidx.room.Room
 import com.example.abl.data.database.AppDatabase
 import com.example.abl.data.database.dao.AppInformationDao
 import com.example.abl.data.database.dao.AppUsageDataDao
+import com.example.abl.data.database.dao.AppUsageRecordDao
 import com.example.abl.data.database.dao.RiskyAppDao
 import com.example.abl.data.database.dao.UserProfileDao
+import com.example.abl.data.database.dao.NormalBehaviourProfileDao
+import com.example.abl.data.database.dao.AppSpecificProfileDao
 import com.example.abl.data.repository.AppInformationRepositoryImpl
 import com.example.abl.data.repository.AppUsageRepositoryImpl
+import com.example.abl.data.repository.BehaviouralProfileRepositoryImpl
 import com.example.abl.data.repository.RiskyAppRepositoryImpl
 import com.example.abl.domain.repository.AppInformationRepository
 import com.example.abl.domain.repository.AppUsageRepository
+import com.example.abl.domain.repository.BehaviouralProfileRepository
 import com.example.abl.domain.repository.RiskyAppRepository
 import dagger.Binds
 import dagger.Module
@@ -41,6 +46,12 @@ abstract class DatabaseModule {
     abstract fun bindRiskyAppRepository(
         riskyAppRepositoryImpl: RiskyAppRepositoryImpl
     ): RiskyAppRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBehaviouralProfileRepository(
+        behaviouralProfileRepositoryImpl: BehaviouralProfileRepositoryImpl
+    ): BehaviouralProfileRepository
 
     companion object {
 
@@ -76,6 +87,24 @@ abstract class DatabaseModule {
         @Provides
         fun provideRiskyAppDao(database: AppDatabase): RiskyAppDao {
             return database.riskyAppDao()
+        }
+
+        @Singleton
+        @Provides
+        fun provideAppUsageRecordDao(database: AppDatabase): AppUsageRecordDao {
+            return database.appUsageRecordDao()
+        }
+
+        @Singleton
+        @Provides
+        fun provideNormalBehaviourProfileDao(database: AppDatabase): NormalBehaviourProfileDao {
+            return database.normalBehaviourProfileDao()
+        }
+
+        @Singleton
+        @Provides
+        fun provideAppSpecificProfileDao(database: AppDatabase): AppSpecificProfileDao {
+            return database.appSpecificProfileDao()
         }
     }
 }

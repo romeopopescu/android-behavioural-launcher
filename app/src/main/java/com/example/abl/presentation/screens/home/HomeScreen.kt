@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
+import com.example.abl.presentation.viewmodel.BehaviouralProfileViewModel
 import com.example.abl.presentation.viewmodel.SearchViewModel
 import com.example.abl.presentation.viewmodel.SearchViewModel_HiltModules
 
@@ -39,10 +40,12 @@ fun HomeScreen(
     val recommendedApps = launcherViewModel.recommendedApps.collectAsState().value
     val searchViewModel: SearchViewModel = hiltViewModel()
     val riskyApps = launcherViewModel.riskyApps.collectAsState().value
+    val behaviouralProfileViewMode: BehaviouralProfileViewModel = hiltViewModel();
 
     LaunchedEffect(Unit) {
         launcherViewModel.loadRecommendedApps()
         launcherViewModel.loadRiskyApps()
+
     }
 
     Column(
