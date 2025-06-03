@@ -17,8 +17,6 @@ class BehaviouralProfileRepositoryImpl @Inject constructor(
     private val normalBehaviourProfileDao: NormalBehaviourProfileDao
 ) : BehaviouralProfileRepository {
 
-    // --- Mappers --- 
-
     private fun NormalBehaviourProfile.toEntity(): Pair<NormalBehaviourProfileEntity, List<AppSpecificProfileEntity>> {
         val profileEntity = NormalBehaviourProfileEntity(
             profileId = this.profileId,
@@ -34,7 +32,7 @@ class BehaviouralProfileRepositoryImpl @Inject constructor(
 
     private fun AppSpecificProfile.toEntity(ownerProfileId: String): AppSpecificProfileEntity {
         return AppSpecificProfileEntity(
-            ownerProfileId = ownerProfileId, // Ensure this is set correctly
+            ownerProfileId = ownerProfileId,
             packageName = this.packageName,
             typicalTotalForegroundTimePerDayMsStart = this.typicalTotalForegroundTimePerDayMs.first,
             typicalTotalForegroundTimePerDayMsEnd = this.typicalTotalForegroundTimePerDayMs.last,
@@ -75,20 +73,18 @@ class BehaviouralProfileRepositoryImpl @Inject constructor(
         )
     }
 
-    // --- Repository Methods --- 
-
     override suspend fun saveNormalBehaviourProfile(profile: NormalBehaviourProfile) {
         val (profileEntity, appSpecificEntities) = profile.toEntity()
         normalBehaviourProfileDao.insertOrReplaceProfileWithApps(profileEntity, appSpecificEntities)
     }
 
     override fun getNormalBehaviourProfile(): Flow<NormalBehaviourProfile?> {
-        return normalBehaviourProfileDao.getNormalProfileWithApps().map { profileWithApps -> // Using default profileId
+        return normalBehaviourProfileDao.getNormalProfileWithApps().map { profileWithApps ->
             profileWithApps?.toDomain()
         }
     }
 
     override suspend fun clearNormalBehaviourProfile() {
-        normalBehaviourProfileDao.clearAllProfileData() // Using default profileId
+        normalBehaviourProfileDao.clearAllProfileData()
     }
 }

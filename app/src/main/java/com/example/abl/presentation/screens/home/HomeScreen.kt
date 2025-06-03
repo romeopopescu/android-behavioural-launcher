@@ -107,12 +107,12 @@ fun HomeScreen(
         }
         val statusColor = when (anomalyStatus) {
             is AnomalyDetectionResult.HighAlert -> Color.Red
-            is AnomalyDetectionResult.Suspicious -> Color.DarkGray // Or another color like Orange
+            is AnomalyDetectionResult.Suspicious -> Color.DarkGray
             else -> Color.Gray
         }
         Text(text = statusText, color = statusColor)
 
-        Spacer(modifier = Modifier.height(16.dp)) // Adjusted spacer
+        Spacer(modifier = Modifier.height(16.dp))
         if (recommendedApps.isNotEmpty()) {
             Text("Recommended for you", color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
             Row(

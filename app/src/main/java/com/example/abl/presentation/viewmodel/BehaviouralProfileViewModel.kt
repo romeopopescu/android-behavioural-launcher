@@ -37,7 +37,7 @@ class BehaviouralProfileViewModel @Inject constructor(
     private val TAG = "BehaviouralProfileVM"
     private val REALTIME_SAMPLING_INTERVAL_MS = 1 * 60 * 1000L 
     private val SAMPLER_WINDOW_DURATION_MS = 15 * 60 * 1000L 
-    private val HISTORICAL_DATA_COLLECTION_DAYS = 7 // Collect for the past 7 days
+    private val HISTORICAL_DATA_COLLECTION_DAYS = 7
 
     private val _collectedUsageRecords = MutableStateFlow<List<AppUsageRecord>>(emptyList()) 
     val collectedUsageRecords: StateFlow<List<AppUsageRecord>> = _collectedUsageRecords.asStateFlow()
@@ -57,14 +57,12 @@ class BehaviouralProfileViewModel @Inject constructor(
         viewModelScope.launch {
             Log.d(TAG, "Starting historical AppUsageRecord collection for $HISTORICAL_DATA_COLLECTION_DAYS days and profile generation...")
             try {
-                // Correctly calling the new method in UsageStatsCollector
                 usageStatsCollector.collectAndStoreUsageDataForPastDays(HISTORICAL_DATA_COLLECTION_DAYS)
                 Log.d(TAG, "Historical AppUsageRecord collection attempt complete for $HISTORICAL_DATA_COLLECTION_DAYS days.")
                 
                 behaviouralProfileManager.generateOrUpdateNormalProfile()
                 Log.d(TAG, "Behaviour profile generation/update attempted.")
 
-                // Optionally, load some records for display (e.g., last HISTORICAL_DATA_COLLECTION_DAYS days)
                 loadCollectedAppUsageRecordsForDisplay()
 
             } catch (e: SecurityException) {
@@ -74,7 +72,6 @@ class BehaviouralProfileViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Error during historical collection or profile generation: ${e.localizedMessage}", e)
                 _collectedUsageRecords.value = emptyList()
-                 // Potentially set anomaly status to indicate an error with profile generation
                 _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Profile generation error: ${e.localizedMessage}"), 0)
             }
         }
@@ -83,8 +80,7 @@ class BehaviouralProfileViewModel @Inject constructor(
     private fun loadCollectedAppUsageRecordsForDisplay() {
         viewModelScope.launch {
             Log.d(TAG, "Attempting to load collected app usage records for display from DAO for the last $HISTORICAL_DATA_COLLECTION_DAYS days.")
-            // Calculate the query window based on queryStartTime (actual day of usage)
-            val endTime = System.currentTimeMillis() // Use current time as the upper bound for the most recent day
+            val endTime = System.currentTimeMillis()
             val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
             calendar.timeInMillis = endTime
             calendar.add(Calendar.DAY_OF_YEAR, -(HISTORICAL_DATA_COLLECTION_DAYS - 1))
@@ -95,7 +91,6 @@ class BehaviouralProfileViewModel @Inject constructor(
             val startTime = calendar.timeInMillis
 
             try {
-                // Use getRecordsByQueryDateRange to fetch records based on the actual usage day
                 appUsageRecordDao.getRecordsByQueryDateRange(rangeStart = startTime, rangeEnd = endTime)
                     .collect { records ->
                         _collectedUsageRecords.value = records.sortedByDescending { it.queryStartTime + it.lastHourUsed } // Sort for display
@@ -120,10 +115,10 @@ class BehaviouralProfileViewModel @Inject constructor(
                     val currentProfile = behaviouralProfileManager.getNormalProfile().firstOrNull()
                     if (currentProfile == null) {
                         Log.w(TAG, "No profile loaded yet, skipping anomaly check.")
-                        if (_anomalyDetectionStatus.value !is AnomalyDetectionResult.Suspicious) { // Avoid constant logging if already suspicious
+                        if (_anomalyDetectionStatus.value !is AnomalyDetectionResult.Suspicious) {
                            _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Profile not yet generated"), 0) 
                         }
-                        delay(REALTIME_SAMPLING_INTERVAL_MS * 2) // Wait a bit longer if profile isn't ready
+                        delay(REALTIME_SAMPLING_INTERVAL_MS * 2)
                         continue
                     }
 
@@ -133,12 +128,10 @@ class BehaviouralProfileViewModel @Inject constructor(
                     if (currentUsage.isNotEmpty()){ 
                         val result = anomalyDetector.checkForAnomalies(currentProfile, currentUsage, SAMPLER_WINDOW_DURATION_MS)
                         _anomalyDetectionStatus.value = result
-                        // Log only if status changes or is not normal to reduce log spam
                         if (result !is AnomalyDetectionResult.Normal) {
                            Log.d(TAG, "Anomaly detection result: $result")
                         }
                     } else {
-                        // If no recent usage, and status is not already normal, set to normal.
                         if(_anomalyDetectionStatus.value !is AnomalyDetectionResult.Normal) {
                            _anomalyDetectionStatus.value = AnomalyDetectionResult.Normal 
                            Log.d(TAG, "No recent usage detected in the sample window. Status set to Normal.")
@@ -152,7 +145,7 @@ class BehaviouralProfileViewModel @Inject constructor(
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in realtime monitoring loop: ${e.localizedMessage}", e)
                     _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Realtime monitoring error: ${e.message}"), 50)
-                     delay(REALTIME_SAMPLING_INTERVAL_MS) // Ensure delay even on other exceptions before retrying
+                     delay(REALTIME_SAMPLING_INTERVAL_MS)
                 }
                 delay(REALTIME_SAMPLING_INTERVAL_MS)
             }
@@ -172,7 +165,6 @@ class BehaviouralProfileViewModel @Inject constructor(
         Log.d(TAG, "BehaviouralProfileViewModel cleared.")
     }
 
-    // Public method to allow manual refresh if needed from UI
     fun triggerHistoricalDataCollectionAndProfileUpdate() {
         Log.d(TAG, "Manual trigger for historical data collection and profile update.")
         collectHistoricalDataAndGenerateProfile()

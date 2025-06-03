@@ -11,13 +11,12 @@ import android.app.usage.UsageEvents
 import android.util.Log
 import java.util.TimeZone
 
-// Helper data class similar to the one in UsageStatsCollector for temporary processing
 private data class SampledAppActivityDetails(
     var firstTimestamp: Long = -1L,
     var lastTimestamp: Long = -1L,
     var launchCount: Int = 0,
     var totalTimeInForeground: Long = 0L,
-    var currentForegroundStartTime: Long = -1L // To calculate foreground time within the window
+    var currentForegroundStartTime: Long = -1L
 )
 
 class RealtimeUsageSampler @Inject constructor(
@@ -33,12 +32,11 @@ class RealtimeUsageSampler @Inject constructor(
 
         val records = mutableListOf<AppUsageRecord>()
         val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-        calendar.timeInMillis = endTime // For dayOfWeekUsed
+        calendar.timeInMillis = endTime
 
         val dayOfWeekForRecord = calendar.get(Calendar.DAY_OF_WEEK)
-        val recordTimestamp = endTime // Sampled now
+        val recordTimestamp = endTime
 
-        // 1. Process UsageEvents for precise activity within the window
         val appEventDetails = mutableMapOf<String, SampledAppActivityDetails>()
 
         try {
@@ -50,7 +48,6 @@ class RealtimeUsageSampler @Inject constructor(
                     val packageName = event.packageName ?: continue
                     val timestamp = event.timeStamp
 
-                    // Ensure event is within our precise window (queryEvents might give some outside)
                     if (timestamp < startTime || timestamp > endTime) continue
 
                     val details = appEventDetails.getOrPut(packageName) { SampledAppActivityDetails() }
@@ -64,8 +61,7 @@ class RealtimeUsageSampler @Inject constructor(
                             if (timestamp > details.lastTimestamp) {
                                 details.lastTimestamp = timestamp
                             }
-                            // Start timing foreground session
-                            if (details.currentForegroundStartTime == -1L) { // Only if not already in foreground
+                            if (details.currentForegroundStartTime == -1L) {
                                 details.currentForegroundStartTime = timestamp
                             }
                         }
@@ -73,24 +69,22 @@ class RealtimeUsageSampler @Inject constructor(
                             if (timestamp > details.lastTimestamp) {
                                 details.lastTimestamp = timestamp
                             }
-                            // End timing foreground session and add to total
                             if (details.currentForegroundStartTime != -1L) {
                                 details.totalTimeInForeground += (timestamp - details.currentForegroundStartTime)
-                                details.currentForegroundStartTime = -1L // Reset
+                                details.currentForegroundStartTime = -1L
                             }
                         }
-                        // Consider other events that might update lastTimestamp
+
                         UsageEvents.Event.ACTIVITY_STOPPED,
                         UsageEvents.Event.USER_INTERACTION,
-                        UsageEvents.Event.ACTIVITY_RESUMED, // Could also update last timestamp
-                        UsageEvents.Event.SCREEN_INTERACTIVE, // Might indicate general activity
-                        UsageEvents.Event.SCREEN_NON_INTERACTIVE -> { // Could end a foreground session implicitly
+                        UsageEvents.Event.ACTIVITY_RESUMED,
+                        UsageEvents.Event.SCREEN_INTERACTIVE,
+                        UsageEvents.Event.SCREEN_NON_INTERACTIVE -> {
                             if (timestamp > details.lastTimestamp) {
                                 details.lastTimestamp = timestamp
                             }
                             if (event.eventType == UsageEvents.Event.SCREEN_NON_INTERACTIVE || event.eventType == UsageEvents.Event.ACTIVITY_STOPPED) {
                                 if (details.currentForegroundStartTime != -1L) {
-                                     // If screen locks or activity stops while app was in foreground, count time until this event
                                     details.totalTimeInForeground += (timestamp - details.currentForegroundStartTime)
                                     details.currentForegroundStartTime = -1L
                                 }
@@ -98,12 +92,10 @@ class RealtimeUsageSampler @Inject constructor(
                         }
                     }
                 }
-                 // After iterating through all events, check for apps that were still in foreground at endTime
                 appEventDetails.forEach { (_, details) ->
                     if (details.currentForegroundStartTime != -1L) {
                         details.totalTimeInForeground += (endTime - details.currentForegroundStartTime)
                         details.currentForegroundStartTime = -1L // Reset
-                         // Ensure lastTimestamp is updated to endTime if it was foreground until then
                         if (details.lastTimestamp < endTime) {
                              details.lastTimestamp = endTime
                         }
@@ -118,7 +110,6 @@ class RealtimeUsageSampler @Inject constructor(
             Log.e(TAG, "Exception querying or processing usage events for sampling.", e)
         }
 
-        // 2. Create AppUsageRecord from processed event data
         appEventDetails.forEach { (packageName, details) ->
             if (details.launchCount > 0 || details.totalTimeInForeground > 0) {
                 val firstHour = if (details.firstTimestamp != -1L) {
@@ -131,20 +122,14 @@ class RealtimeUsageSampler @Inject constructor(
                     calendar.get(Calendar.HOUR_OF_DAY)
                 } else -1
                 
-                // If totalTimeInForeground is still zero but there were launches,
-                // it means the app was launched and exited very quickly, or events were sparse.
-                // We'll record it if there's any sign of activity.
                 if (details.totalTimeInForeground == 0L && details.launchCount > 0 && details.firstTimestamp != -1L) {
-                     // A very small, possibly non-zero time to indicate it was used, if events are too sparse for accurate timing.
-                     // Or, acknowledge it could be zero if events don't give enough info for foreground time.
-                     // For now, keep as calculated. If it's 0, it's 0.
                 }
 
 
                 records.add(
                     AppUsageRecord(
                         packageName = packageName,
-                        queryStartTime = startTime, // The window we are interested in
+                        queryStartTime = startTime,
                         queryEndTime = endTime,
                         totalTimeInForeground = details.totalTimeInForeground,
                         recordedAt = recordTimestamp,

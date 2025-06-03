@@ -8,11 +8,11 @@ import com.example.abl.data.database.model.ProfileTypeConverters
 @Entity(tableName = "normal_behaviour_profiles")
 @TypeConverters(ProfileTypeConverters::class)
 data class NormalBehaviourProfileEntity(
-    @PrimaryKey val profileId: String = "user_default", // Default profile ID
+    @PrimaryKey val profileId: String = "user_default",
     val lastGeneratedTimestamp: Long,
-    // List<AppSpecificProfileEntity> will be handled via a relation, not a direct field
-    val allowedInfrequentApps: Set<String>,     // Converted by ProfileTypeConverters
-    val typicalDailyActiveHours: Set<Int>,      // Converted by ProfileTypeConverters
+    // List<AppSpecificProfileEntity>
+    val allowedInfrequentApps: Set<String>,
+    val typicalDailyActiveHours: Set<Int>,
     val typicalDailyTotalUsageTimeMsStart: Long,
     val typicalDailyTotalUsageTimeMsEnd: Long
 ) 

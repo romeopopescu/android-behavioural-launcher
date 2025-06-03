@@ -17,7 +17,6 @@ import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
 
-// Helper data class for processing events
 private data class AppDailyActivityDetails(
     var firstTimestamp: Long = -1L,
     var lastTimestamp: Long = -1L,
@@ -31,7 +30,6 @@ class UsageStatsCollector @Inject constructor(
 ) {
     private val TAG = "UsageStatsCollector"
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).apply {
-        // Optionally, set timezone for logging if needed for clarity, though timestamps are UTC
         Log.d(TAG, Locale.getDefault().toString())
     }
 
@@ -39,7 +37,7 @@ class UsageStatsCollector @Inject constructor(
 
     suspend fun collectAndStoreUsageDataForPastDays(daysToCollect: Int) {
 
-        val overallEndTimestamp = System.currentTimeMillis() // now
+        val overallEndTimestamp = System.currentTimeMillis()
 
 
         val tempUtcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
@@ -54,7 +52,7 @@ class UsageStatsCollector @Inject constructor(
         tempUtcCal.set(Calendar.SECOND, 0)
         tempUtcCal.set(Calendar.MILLISECOND, 0)
 
-        val overallStartTimestamp = tempUtcCal.timeInMillis // Use this robustly calculated value
+        val overallStartTimestamp = tempUtcCal.timeInMillis
 
         withContext(Dispatchers.IO) {
             appUsageRecordDao.deleteRecordsByQueryDateRange(overallStartTimestamp, overallEndTimestamp)
@@ -109,37 +107,25 @@ class UsageStatsCollector @Inject constructor(
 
         if (rawUsageStatsList == null || rawUsageStatsList.isEmpty()) {
             Log.w(TAG, "queryUsageStats returned null or empty for period ${dateFormat.format(Date(dayStartTime))}.")
-            // Still process events, as an app might have launches but negligible reported UsageStats time
         }
         Log.d(TAG, "queryUsageStats for period ${dateFormat.format(Date(dayStartTime))} returned ${rawUsageStatsList?.size ?: 0} raw items.")
 
-        // 1a. Aggregate UsageStats by package name to handle potential duplicates from the API
-        // This ensures one UsageStats object per package for the given day.
         val aggregatedUsageStatsMap = mutableMapOf<String, UsageStats>()
         rawUsageStatsList?.forEach { stat ->
             val existingStat = aggregatedUsageStatsMap[stat.packageName]
             if (existingStat == null) {
                 aggregatedUsageStatsMap[stat.packageName] = stat
             } else {
-                // Aggregate: sum foreground time, take the latest lastTimeUsed, etc.
-                // For simplicity, we'll assume the system might split stats for a day.
-                // We'll create a new UsageStats object that combines them.
-                // Note: This is a simplified aggregation. `firstTimeStamp` and `lastTimeStamp` on UsageStats
-                // are not standard API for older versions, so we rely on lastTimeUsed and totalTimeInForeground.
                 try {
-                    val combinedStat = UsageStats(stat) // Create a copy to modify
-                    combinedStat.add(existingStat) // Use the add method of UsageStats to combine
+                    val combinedStat = UsageStats(stat)
+                    combinedStat.add(existingStat)
                     aggregatedUsageStatsMap[stat.packageName] = combinedStat
                      Log.w(TAG, "Aggregated duplicate UsageStat for ${stat.packageName} on ${dateFormat.format(Date(dayStartTime))}. New total time: ${combinedStat.totalTimeInForeground}")
                 } catch (e: NoSuchMethodError) {
-                    // Fallback if UsageStats(UsageStats) constructor or add() is not available (older API levels).
-                    // Prioritize the one with more foreground time or latest lastTimeUsed.
                     val newTotalTime = existingStat.totalTimeInForeground + stat.totalTimeInForeground
                     val newLastTimeUsed = maxOf(existingStat.lastTimeUsed, stat.lastTimeUsed)
-                    // Cannot create a new UsageStats easily here without reflection or more complex logic.
-                    // So, we'll take the one with more foreground time as a heuristic.
                     if (stat.totalTimeInForeground > existingStat.totalTimeInForeground) {
-                        aggregatedUsageStatsMap[stat.packageName] = stat // Or a more sophisticated merge
+                        aggregatedUsageStatsMap[stat.packageName] = stat
                     }
                     Log.w(TAG, "Could not fully aggregate UsageStat for ${stat.packageName} due to API level. Used heuristic. Combined time approx: $newTotalTime")
                 }
@@ -147,8 +133,6 @@ class UsageStatsCollector @Inject constructor(
         }
         Log.d(TAG, "Aggregated UsageStats to ${aggregatedUsageStatsMap.size} items for period ${dateFormat.format(Date(dayStartTime))}.")
 
-
-        // 2. Query UsageEvents (for firstTimeUsed, lastTimeUsed *on this day*, and launchCount)
         val appEventDetails = mutableMapOf<String, AppDailyActivityDetails>()
         try {
             val usageEvents = usageStatsManager.queryEvents(dayStartTime, dayEndTime)
@@ -156,7 +140,6 @@ class UsageStatsCollector @Inject constructor(
                 val event = UsageEvents.Event()
                 while (usageEvents.hasNextEvent()) {
                     usageEvents.getNextEvent(event)
-                    // Ensure event is within our precise window (queryEvents might give some outside the edges)
                     if (event.timeStamp < dayStartTime || event.timeStamp > dayEndTime) continue
 
                     val packageName = event.packageName ?: continue
@@ -177,9 +160,9 @@ class UsageStatsCollector @Inject constructor(
                         }
                         UsageEvents.Event.MOVE_TO_BACKGROUND,
                         UsageEvents.Event.ACTIVITY_STOPPED,
-                        UsageEvents.Event.DEVICE_SHUTDOWN, // If it was active then
+                        UsageEvents.Event.DEVICE_SHUTDOWN,
                         UsageEvents.Event.USER_INTERACTION,
-                        UsageEvents.Event.SCREEN_NON_INTERACTIVE -> { // Consider this implies end of active use
+                        UsageEvents.Event.SCREEN_NON_INTERACTIVE -> {
                             if (timestamp > details.lastTimestamp) {
                                 details.lastTimestamp = timestamp
                             }
@@ -195,35 +178,27 @@ class UsageStatsCollector @Inject constructor(
         Log.d(TAG, "Processed ${appEventDetails.size} packages from UsageEvents for period ${dateFormat.format(Date(dayStartTime))}.")
 
 
-        // 3. Combine data and create AppUsageRecord entities
-            val records = mutableListOf<AppUsageRecord>()
+        val records = mutableListOf<AppUsageRecord>()
         val recordTimestamp = System.currentTimeMillis()
 
-        // Use a dedicated UTC calendar for deriving dayOfWeekUsed and hours
         val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
         utcCalendar.timeInMillis = dayStartTime
         val dayOfWeekForRecord = utcCalendar.get(Calendar.DAY_OF_WEEK)
         
-        // Debug: Log the source of dayOfWeekForRecord
         Log.d(debugging, "For day starting ${dateFormat.format(Date(dayStartTime))}, dayOfWeekForRecord set to: $dayOfWeekForRecord (1=Sun, 7=Sat)")
 
-        // Iterate over packages found in events first, as they represent definite interaction.
-        // Then augment with UsageStats for apps that might not have had explicit foreground/background events
-        // but still show foreground time (e.g. system apps, or ongoing sessions).
-        
         val processedPackages = mutableSetOf<String>()
 
         appEventDetails.forEach { (packageName, eventData) ->
             processedPackages.add(packageName)
-            val usageStat = aggregatedUsageStatsMap[packageName] // Get aggregated stat
+            val usageStat = aggregatedUsageStatsMap[packageName]
 
-            var totalForegroundTime = usageStat?.totalTimeInForeground ?: 0L // Default to 0 if no usage stat (e.g. launch only)
+            var totalForegroundTime = usageStat?.totalTimeInForeground ?: 0L
 
 
-            // If totalForegroundTime is 0 but there were launches, it's still a valid record of interaction.
             if (totalForegroundTime <= 0 && eventData.launchCount == 0 && eventData.firstTimestamp == -1L) {
                 Log.d(TAG, "Skipping Pkg=$packageName for ${dateFormat.format(Date(dayStartTime))}: No UsageStats foreground time and no launch/first-use events.")
-                return@forEach // continue to next package
+                return@forEach
             }
             
             val actualFirstTimestampForDay = if (eventData.firstTimestamp in dayStartTime..dayEndTime) eventData.firstTimestamp else -1L
@@ -233,13 +208,10 @@ class UsageStatsCollector @Inject constructor(
                 actualLastTimestampForDay = eventData.lastTimestamp
             }
 
-            // Ensure lastTimestamp is not before firstTimestamp if both are valid for the day
             if (actualFirstTimestampForDay != -1L && actualLastTimestampForDay != -1L && actualLastTimestampForDay < actualFirstTimestampForDay) {
                 Log.w(TAG, "Correcting lastTimestamp for Pkg=$packageName on ${dateFormat.format(Date(dayStartTime))}. Original lastTS=${dateFormat.format(Date(actualLastTimestampForDay))} was before firstTS=${dateFormat.format(Date(actualFirstTimestampForDay))}. Setting lastTS = firstTS.")
                 actualLastTimestampForDay = actualFirstTimestampForDay
             } else if (actualFirstTimestampForDay != -1L && actualLastTimestampForDay == -1L) {
-                // If we have a first timestamp but no distinct last timestamp from events for the day,
-                // assume activity ended at least when it started.
                 actualLastTimestampForDay = actualFirstTimestampForDay
             }
 
@@ -253,12 +225,9 @@ class UsageStatsCollector @Inject constructor(
                 utcCalendar.timeInMillis = actualLastTimestampForDay
                 utcCalendar.get(Calendar.HOUR_OF_DAY)
             } else -1
-            
-            // Sanity check for hours after derivation
+
             if (firstHour != -1 && lastHour != -1 && firstHour > lastHour) {
                  Log.e(TAG, "CRITICAL HourInconsistency for Pkg=$packageName, Day=${dateFormat.format(Date(dayStartTime))}: FirstHour=${firstHour}, LastHour=${lastHour}. This should have been caught by timestamp logic.")
-                 // As a final safeguard, if this still happens (e.g. due to complex timestamp edge cases across midnight not fully handled by event windowing)
-                 // records.add(...) // Potentially skip or mark this record
             }
 
                     records.add(
@@ -276,19 +245,14 @@ class UsageStatsCollector @Inject constructor(
             )
         }
         
-        // Now process UsageStats for apps that had foreground time but maybe no discrete events captured in appEventDetails
-        // This handles cases like ongoing sessions or system apps.
         aggregatedUsageStatsMap.forEach { (packageName, usageStat) ->
-            if (packageName in processedPackages) return@forEach // Already processed via event data
+            if (packageName in processedPackages) return@forEach
 
             if (usageStat.totalTimeInForeground <= 0) {
                 Log.d(TAG, "Skipping Pkg=$packageName (from UsageStats only) for ${dateFormat.format(Date(dayStartTime))}: totalTimeInForeground <= 0.")
                 return@forEach
             }
             
-            // For these stats-only entries, we don't have precise event-based first/last timestamps for the day.
-            // We can infer a lastHour from usageStat.lastTimeUsed if it's within the day.
-            // FirstHour and LaunchCount will be unknown (-1 or 0).
             var inferredLastHour = -1
             if (usageStat.lastTimeUsed in dayStartTime..dayEndTime) {
                 utcCalendar.timeInMillis = usageStat.lastTimeUsed
@@ -302,10 +266,10 @@ class UsageStatsCollector @Inject constructor(
                     queryEndTime = dayEndTime,
                     totalTimeInForeground = usageStat.totalTimeInForeground,
                     recordedAt = recordTimestamp,
-                    launchCount = 0, // No event-based launch count
+                    launchCount = 0,
                     dayOfWeekUsed = dayOfWeekForRecord,
-                    firstHourUsed = -1, // No event-based first hour
-                    lastHourUsed = inferredLastHour // Can be -1 if lastTimeUsed is outside the day
+                    firstHourUsed = -1,
+                    lastHourUsed = inferredLastHour
                 )
             )
         }

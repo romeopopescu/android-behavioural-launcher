@@ -16,9 +16,8 @@ object PermissionRiskScorer {
         android.Manifest.permission.READ_PHONE_STATE to 5,
         android.Manifest.permission.READ_EXTERNAL_STORAGE to 5,
         android.Manifest.permission.WRITE_EXTERNAL_STORAGE to 5,
-        // Consider adding MANAGE_EXTERNAL_STORAGE for API 30+ with a very high score if applicable
+        // MANAGE_EXTERNAL_STORAGE
         // android.Manifest.permission.MANAGE_EXTERNAL_STORAGE to 15,
-        // Add more permissions like:
         // android.Manifest.permission.SYSTEM_ALERT_WINDOW
         // android.Manifest.permission.BIND_DEVICE_ADMIN
         // android.Manifest.permission.REQUEST_INSTALL_PACKAGES
