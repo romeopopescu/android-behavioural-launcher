@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.util.*
 
 @HiltViewModel
 class BehaviouralProfileViewModel @Inject constructor(
@@ -82,16 +83,26 @@ class BehaviouralProfileViewModel @Inject constructor(
     private fun loadCollectedAppUsageRecordsForDisplay() {
         viewModelScope.launch {
             Log.d(TAG, "Attempting to load collected app usage records for display from DAO for the last $HISTORICAL_DATA_COLLECTION_DAYS days.")
-            val startTime = System.currentTimeMillis() - (HISTORICAL_DATA_COLLECTION_DAYS * 24 * 60 * 60 * 1000L)
-            val endTime = System.currentTimeMillis()
+            // Calculate the query window based on queryStartTime (actual day of usage)
+            val endTime = System.currentTimeMillis() // Use current time as the upper bound for the most recent day
+            val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+            calendar.timeInMillis = endTime
+            calendar.add(Calendar.DAY_OF_YEAR, -(HISTORICAL_DATA_COLLECTION_DAYS - 1))
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+            val startTime = calendar.timeInMillis
+
             try {
-                appUsageRecordDao.getAllRecords(startTime = startTime, endTime = endTime)
+                // Use getRecordsByQueryDateRange to fetch records based on the actual usage day
+                appUsageRecordDao.getRecordsByQueryDateRange(rangeStart = startTime, rangeEnd = endTime)
                     .collect { records ->
-                        _collectedUsageRecords.value = records
-                        Log.d(TAG, "Successfully loaded ${records.size} AppUsageRecord items for display.")
+                        _collectedUsageRecords.value = records.sortedByDescending { it.queryStartTime + it.lastHourUsed } // Sort for display
+                        Log.d(TAG, "Successfully loaded ${records.size} AppUsageRecord items (by query date) for display.")
                     }
             } catch (e: Exception) {
-                Log.e(TAG, "Error loading records from AppUsageRecordDao for display", e)
+                Log.e(TAG, "Error loading records from AppUsageRecordDao for display (by query date)", e)
                 _collectedUsageRecords.value = emptyList()
             }
         }
