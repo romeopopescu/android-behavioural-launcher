@@ -11,12 +11,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.abl.presentation.viewmodel.LauncherViewModel
 import androidx.compose.ui.Alignment
@@ -26,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
+import com.example.abl.domain.usecases.anomaly.AnomalyDetectionResult
 import com.example.abl.presentation.viewmodel.BehaviouralProfileViewModel
 import com.example.abl.presentation.viewmodel.SearchViewModel
 import com.example.abl.presentation.viewmodel.SearchViewModel_HiltModules
@@ -40,16 +47,45 @@ fun HomeScreen(
     val recommendedApps = launcherViewModel.recommendedApps.collectAsState().value
     val searchViewModel: SearchViewModel = hiltViewModel()
     val riskyApps = launcherViewModel.riskyApps.collectAsState().value
-    val behaviouralProfileViewMode: BehaviouralProfileViewModel = hiltViewModel();
+    val behaviouralProfileViewModel: BehaviouralProfileViewModel = hiltViewModel()
+    val anomalyStatus by behaviouralProfileViewModel.anomalyDetectionStatus.collectAsState()
+    var showHighAlertDialog by remember { mutableStateOf(false) }
+    var highAlertReasons by remember { mutableStateOf<List<String>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         launcherViewModel.loadRecommendedApps()
         launcherViewModel.loadRiskyApps()
+    }
 
+    LaunchedEffect(anomalyStatus) {
+        if (anomalyStatus is AnomalyDetectionResult.HighAlert) {
+            highAlertReasons = (anomalyStatus as AnomalyDetectionResult.HighAlert).reasons
+            showHighAlertDialog = true
+        }
+    }
+
+    if (showHighAlertDialog) {
+        AlertDialog(
+            onDismissRequest = { showHighAlertDialog = false },
+            title = { Text("High Security Alert!") },
+            text = {
+                Column {
+                    Text("Unusual activity detected. Reasons:")
+                    highAlertReasons.forEach { reason ->
+                        Text("- $reason")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showHighAlertDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
     Column(
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Top,
+        verticalArrangement = Arrangement.Top,
         modifier = Modifier.padding(16.dp)
     ) {
         Button(
@@ -62,7 +98,21 @@ fun HomeScreen(
         ) {
             Text("Stats")
         }
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        val statusText = when (val status = anomalyStatus) {
+            is AnomalyDetectionResult.Normal -> "Status: Normal"
+            is AnomalyDetectionResult.Suspicious -> "Status: Suspicious (Score: ${status.deviationScore})Reasons: ${status.reasons.joinToString()}"
+            is AnomalyDetectionResult.HighAlert -> "Status: High Alert! (Score: ${status.deviationScore})Reasons: ${status.reasons.joinToString()}"
+        }
+        val statusColor = when (anomalyStatus) {
+            is AnomalyDetectionResult.HighAlert -> Color.Red
+            is AnomalyDetectionResult.Suspicious -> Color.DarkGray // Or another color like Orange
+            else -> Color.Gray
+        }
+        Text(text = statusText, color = statusColor)
+
+        Spacer(modifier = Modifier.height(16.dp)) // Adjusted spacer
         if (recommendedApps.isNotEmpty()) {
             Text("Recommended for you", color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
             Row(

@@ -1,4 +1,4 @@
-package com.example.abl.domain.usecases.anomaly // Or com.example.abl.domain.detection
+package com.example.abl.domain.usecases.anomaly
 
 import android.util.Log
 import com.example.abl.data.database.entity.AppUsageRecord // Current usage records
@@ -8,7 +8,6 @@ import java.util.Calendar // Added for current hour
 import java.util.TimeZone // Added for UTC Calendar
 import java.util.concurrent.TimeUnit // Added for expected time calculation
 
-// Represents the outcome of an anomaly check
 sealed class AnomalyDetectionResult {
     object Normal : AnomalyDetectionResult()
     data class Suspicious(val reasons: List<String>, val deviationScore: Int) : AnomalyDetectionResult()
@@ -19,23 +18,21 @@ class AnomalyDetector @Inject constructor() {
 
     private val TAG = "AnomalyDetector"
 
-    // Thresholds - these would need careful tuning
-    private val UNPROFILED_APP_USAGE_TIME_THRESHOLD_MS: Long = 5 * 60 * 1000 // 5 mins in sample window for an unprofiled app
-    private val TIME_DEVIATION_FACTOR_WARN = 2.5 // e.g. 2.5x normal usage
-    private val TIME_DEVIATION_FACTOR_ALERT = 4.0 // e.g. 4x normal usage
+    private val UNPROFILED_APP_USAGE_TIME_THRESHOLD_MS: Long = 1 * 60 * 1000
+    private val TIME_DEVIATION_FACTOR_WARN = 2.5
+    private val TIME_DEVIATION_FACTOR_ALERT = 4.0
     private val LAUNCH_DEVIATION_FACTOR_WARN = 3.0
     private val LAUNCH_DEVIATION_FACTOR_ALERT = 5.0
-    private val MIN_EXPECTED_TIME_FOR_DEVIATION_CHECK_MS: Long = 1 * 60 * 1000 // 1 min, to avoid alerts on very small expected times
-    private val MIN_EXPECTED_LAUNCHES_FOR_DEVIATION_CHECK = 0.5 // If expected launches are less than this, don't be too strict
+    private val MIN_EXPECTED_TIME_FOR_DEVIATION_CHECK_MS: Long = 1 * 60 * 1000
+    private val MIN_EXPECTED_LAUNCHES_FOR_DEVIATION_CHECK = 0.5
 
     fun checkForAnomalies(
         currentProfile: NormalBehaviourProfile?,
-        currentUsageRecords: List<AppUsageRecord>, // From RealtimeUsageSampler (now accurate for the window)
+        currentUsageRecords: List<AppUsageRecord>,
         sampleWindowDurationMs: Long
     ): AnomalyDetectionResult {
         if (currentProfile == null) {
             Log.w(TAG, "No normal behaviour profile available. Cannot perform anomaly detection.")
-            // Consider a specific result for profile not ready, if ViewModel doesn't handle it
             return AnomalyDetectionResult.Suspicious(listOf("Profile not available for anomaly check."), 5)
         }
 

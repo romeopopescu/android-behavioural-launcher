@@ -17,4 +17,4 @@ data class NormalBehaviourProfile(
     val allowedInfrequentApps: Set<String>,     // Package names of apps used rarely but legitimately
     val typicalDailyActiveHours: Set<Int>,      // General hours user is active on the device
     val typicalDailyTotalUsageTimeMs: LongRange // Overall device usage time per day
-) 
+)
