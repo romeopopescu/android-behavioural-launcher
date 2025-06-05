@@ -34,4 +34,8 @@ interface AppUsageRecordDao {
 
     @Query("DELETE FROM app_usage_records WHERE queryStartTime >= :rangeStart AND queryStartTime <= :rangeEnd")
     suspend fun deleteRecordsByQueryDateRange(rangeStart: Long, rangeEnd: Long)
+
+    @Query("SELECT * FROM app_usage_records")
+    suspend fun getAllAppsUsageForApi(): List<AppUsageRecord>
+
 }

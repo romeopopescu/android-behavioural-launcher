@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.abl.data.collector.RealtimeUsageSampler
+import com.example.abl.data.collector.UsageStatsAutoencoder
 import com.example.abl.data.collector.UsageStatsCollector
 import com.example.abl.data.database.dao.AppUsageRecordDao
 import com.example.abl.data.database.entity.AppUsageRecord
@@ -31,7 +32,8 @@ class BehaviouralProfileViewModel @Inject constructor(
     private val appUsageRecordDao: AppUsageRecordDao, 
     private val behaviouralProfileManager: BehaviouralProfileManager,
     private val realtimeUsageSampler: RealtimeUsageSampler,
-    private val anomalyDetector: AnomalyDetector
+    private val anomalyDetector: AnomalyDetector,
+    private val usageStatsAutoencoder: UsageStatsAutoencoder
 ) : ViewModel() {
 
     private val TAG = "BehaviouralProfileVM"
@@ -49,19 +51,18 @@ class BehaviouralProfileViewModel @Inject constructor(
 
     init {
         Log.d(TAG, "BehaviouralProfileViewModel initialized.")
-        collectHistoricalDataAndGenerateProfile() 
-        startRealtimeMonitoring()
+        collectHistoricalDataAndTrainModel()
     }
 
-    private fun collectHistoricalDataAndGenerateProfile() {
+    private fun collectHistoricalDataAndTrainModel() {
         viewModelScope.launch {
-            Log.d(TAG, "Starting historical AppUsageRecord collection for $HISTORICAL_DATA_COLLECTION_DAYS days and profile generation...")
+            Log.d(TAG, "Starting historical AppUsageRecord collection for $HISTORICAL_DATA_COLLECTION_DAYS days and autoencoder model training...")
             try {
                 usageStatsCollector.collectAndStoreUsageDataForPastDays(HISTORICAL_DATA_COLLECTION_DAYS)
                 Log.d(TAG, "Historical AppUsageRecord collection attempt complete for $HISTORICAL_DATA_COLLECTION_DAYS days.")
                 
-                behaviouralProfileManager.generateOrUpdateNormalProfile()
-                Log.d(TAG, "Behaviour profile generation/update attempted.")
+                usageStatsAutoencoder.sendDataToTrainModel()
+                Log.d(TAG, "Autoencoder model training request sent.")
 
                 loadCollectedAppUsageRecordsForDisplay()
 
@@ -70,9 +71,9 @@ class BehaviouralProfileViewModel @Inject constructor(
                 _collectedUsageRecords.value = emptyList() 
                 _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Data collection permission denied"), 0)
             } catch (e: Exception) {
-                Log.e(TAG, "Error during historical collection or profile generation: ${e.localizedMessage}", e)
+                Log.e(TAG, "Error during historical collection or model training: ${e.localizedMessage}", e)
                 _collectedUsageRecords.value = emptyList()
-                _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Profile generation error: ${e.localizedMessage}"), 0)
+                _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Profile/model training error: ${e.localizedMessage}"), 0)
             }
         }
     }
@@ -112,28 +113,16 @@ class BehaviouralProfileViewModel @Inject constructor(
             Log.d(TAG, "Starting realtime anomaly monitoring loop.")
             while (isActive) {
                 try {
-                    val currentProfile = behaviouralProfileManager.getNormalProfile().firstOrNull()
-                    if (currentProfile == null) {
-                        Log.w(TAG, "No profile loaded yet, skipping anomaly check.")
-                        if (_anomalyDetectionStatus.value !is AnomalyDetectionResult.Suspicious) {
-                           _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Profile not yet generated"), 0) 
-                        }
-                        delay(REALTIME_SAMPLING_INTERVAL_MS * 2)
-                        continue
-                    }
+                    val currentUsageRecords = realtimeUsageSampler.sampleCurrentUsage(SAMPLER_WINDOW_DURATION_MS)
+                    Log.d(TAG, "Sampled ${currentUsageRecords.size} records for current usage.")
 
-                    val currentUsage = realtimeUsageSampler.sampleCurrentUsage(SAMPLER_WINDOW_DURATION_MS)
-                    Log.d(TAG, "Sampled ${currentUsage.size} records for current usage.")
+                    if (currentUsageRecords.isNotEmpty()){
+                        Log.w(TAG, "Realtime anomaly detection with API not yet implemented.")
+                         _anomalyDetectionStatus.value = AnomalyDetectionResult.Normal
 
-                    if (currentUsage.isNotEmpty()){ 
-                        val result = anomalyDetector.checkForAnomalies(currentProfile, currentUsage, SAMPLER_WINDOW_DURATION_MS)
-                        _anomalyDetectionStatus.value = result
-                        if (result !is AnomalyDetectionResult.Normal) {
-                           Log.d(TAG, "Anomaly detection result: $result")
-                        }
                     } else {
                         if(_anomalyDetectionStatus.value !is AnomalyDetectionResult.Normal) {
-                           _anomalyDetectionStatus.value = AnomalyDetectionResult.Normal 
+                           _anomalyDetectionStatus.value = AnomalyDetectionResult.Normal
                            Log.d(TAG, "No recent usage detected in the sample window. Status set to Normal.")
                         }
                     }
@@ -141,7 +130,7 @@ class BehaviouralProfileViewModel @Inject constructor(
                 } catch (e: SecurityException) {
                     Log.e(TAG, "Permission error during realtime sampling. Ensure PACKAGE_USAGE_STATS.", e)
                     _anomalyDetectionStatus.value = AnomalyDetectionResult.HighAlert(listOf("Realtime monitoring permission error"), 100)
-                    delay(REALTIME_SAMPLING_INTERVAL_MS * 5) 
+                    delay(REALTIME_SAMPLING_INTERVAL_MS * 5)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in realtime monitoring loop: ${e.localizedMessage}", e)
                     _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Realtime monitoring error: ${e.message}"), 50)
@@ -166,7 +155,7 @@ class BehaviouralProfileViewModel @Inject constructor(
     }
 
     fun triggerHistoricalDataCollectionAndProfileUpdate() {
-        Log.d(TAG, "Manual trigger for historical data collection and profile update.")
-        collectHistoricalDataAndGenerateProfile()
+        Log.d(TAG, "Manual trigger for historical data collection and model training request.")
+        collectHistoricalDataAndTrainModel()
     }
 }
