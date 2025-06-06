@@ -178,7 +178,7 @@ class UsageStatsCollector @Inject constructor(
         Log.d(TAG, "Processed ${appEventDetails.size} packages from UsageEvents for period ${dateFormat.format(Date(dayStartTime))}.")
 
 
-        val records = mutableListOf<AppUsageRecord>()
+            val records = mutableListOf<AppUsageRecord>()
         val recordTimestamp = System.currentTimeMillis()
 
         val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))

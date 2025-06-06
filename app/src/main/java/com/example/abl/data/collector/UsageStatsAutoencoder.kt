@@ -5,6 +5,8 @@ import android.util.Log
 import com.example.abl.data.database.dao.AppUsageRecordDao
 import com.example.abl.data.database.entity.AppUsageRecord
 import com.example.abl.data.network.ApiService
+import com.example.abl.data.network.AnomalyDetectionRequest
+import com.example.abl.data.network.AnomalyDetectionResponse
 import com.example.abl.data.network.AppUsageDataApi
 import com.example.abl.data.network.TrainRequestBody
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -76,7 +78,12 @@ class UsageStatsAutoencoder @Inject constructor(
                 val response = apiService.trainModel(requestBody)
 
                 if (response.isSuccessful) {
-                    Log.i(TAG, "Training data sent successfully. Response code: ${response.code()}")
+                    val trainingResponse = response.body()
+                    if (trainingResponse != null && trainingResponse.success) {
+                        Log.i(TAG, "Training request successful. Model ID: ${trainingResponse.modelId}, Threshold: ${trainingResponse.threshold}")
+                    } else {
+                        Log.w(TAG, "Training request sent, but API indicated failure or null response. Message: ${response.message()}, Body: ${response.errorBody()?.string()}")
+                    }
                 } else {
                     val errorBody = response.errorBody()?.string() ?: "No error body"
                     Log.e(TAG, "Error sending training data. Code: ${response.code()}, Message: ${response.message()}, Error: $errorBody")
@@ -85,6 +92,44 @@ class UsageStatsAutoencoder @Inject constructor(
                 Log.e(TAG, "API Exception when sending training data: ${e.code()} - ${e.message()}", e)
             } catch (e: Exception) {
                 Log.e(TAG, "Generic Exception when sending training data: ${e.message}", e)
+            }
+        }
+    }
+
+    suspend fun detectAnomalies(usageRecords: List<AppUsageRecord>): AnomalyDetectionResponse? {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (usageRecords.isEmpty()) {
+                    Log.d(TAG, "No usage records to send for anomaly detection.")
+                    return@withContext null
+                }
+                Log.d(TAG, "Transforming ${usageRecords.size} records for anomaly detection.")
+                val apiUsageData = transformToAppUsageDataApi(usageRecords)
+
+                if (apiUsageData.isEmpty()) {
+                    Log.w(TAG, "No transformed usage data to send for detection.")
+                    return@withContext null
+                }
+
+                val requestBody = AnomalyDetectionRequest(usageData = apiUsageData)
+
+                Log.d(TAG, "Sending detection data to the API...")
+                val response = apiService.detectAnomalies(requestBody)
+
+                if (response.isSuccessful) {
+                    Log.i(TAG, "Anomaly detection data sent successfully. Response code: ${response.code()}")
+                    response.body()
+                } else {
+                    val errorBody = response.errorBody()?.string() ?: "No error body"
+                    Log.e(TAG, "Error sending detection data. Code: ${response.code()}, Message: ${response.message()}, Error: $errorBody")
+                    null
+                }
+            } catch (e: HttpException) {
+                Log.e(TAG, "API Exception during anomaly detection: ${e.code()} - ${e.message()}", e)
+                null
+            } catch (e: Exception) {
+                Log.e(TAG, "Generic Exception during anomaly detection: ${e.message}", e)
+                null
             }
         }
     }
