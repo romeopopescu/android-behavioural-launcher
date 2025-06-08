@@ -2,10 +2,14 @@ package com.example.abl
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.abl.data.worker.TrainingWorker
@@ -26,6 +30,8 @@ class HiltApplication: Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        // DO NOT manually initialize here.
+        // By implementing Configuration.Provider, we let WorkManager handle its own initialization.
         scheduleTrainingJobs()
     }
 

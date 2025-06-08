@@ -10,6 +10,7 @@ import com.example.abl.data.collector.UsageStatsCollector
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
+
 @HiltWorker
 class TrainingWorker @AssistedInject constructor(
     @Assisted appContext: Context,
