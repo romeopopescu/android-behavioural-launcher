@@ -43,6 +43,8 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
+        <service android:name=".data.collector.UsageAccumulatorService"
+            tools:ignore="Instantiatable" />
     </application>
 
 </manifest>

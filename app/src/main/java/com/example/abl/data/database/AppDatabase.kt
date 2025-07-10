@@ -13,6 +13,7 @@ import com.example.abl.data.database.dao.RiskyAppDao
 import com.example.abl.data.database.dao.UserProfileDao
 import com.example.abl.data.database.dao.NormalBehaviourProfileDao
 import com.example.abl.data.database.dao.AppSpecificProfileDao
+import com.example.abl.data.database.dao.TodayUsageDao
 import com.example.abl.data.database.entity.AppInformation
 import com.example.abl.data.database.entity.AppUsageData
 import com.example.abl.data.database.entity.AppUsagePattern
@@ -44,7 +45,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun riskyAppDao(): RiskyAppDao
     abstract fun userProfileDao(): UserProfileDao
     abstract fun appUsageRecordDao(): AppUsageRecordDao
-
     abstract fun normalBehaviourProfileDao(): NormalBehaviourProfileDao
     abstract fun appSpecificProfileDao(): AppSpecificProfileDao
+    abstract fun todayUsageDao(): TodayUsageDao
 }

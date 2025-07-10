@@ -15,6 +15,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.abl.data.preferences.ProfileStatusManager
 import com.example.abl.data.worker.TrainingWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -35,7 +36,8 @@ class BehaviouralProfileViewModel @Inject constructor(
     private val usageStatsCollector: UsageStatsCollector,
     private val appUsageRecordDao: AppUsageRecordDao, 
     private val realtimeUsageSampler: RealtimeUsageSampler,
-    private val usageStatsAutoencoder: UsageStatsAutoencoder
+    private val usageStatsAutoencoder: UsageStatsAutoencoder,
+    private val profileStatusManager: ProfileStatusManager
 ) : ViewModel() {
 
     private val TAG = "BehaviouralProfileVM"
@@ -54,14 +56,61 @@ class BehaviouralProfileViewModel @Inject constructor(
     init {
         Log.d(TAG, "BehaviouralProfileViewModel initialized.")
         loadCollectedAppUsageRecordsForDisplay()
+//        collectHistoricalDataAndTrainModel()
+        checkAndTriggerInitialTraining()
         startRealtimeMonitoring()
     }
 
-    private fun collectHistoricalDataAndTrainModel() {
-        // This function is now only for the manual trigger, which uses a worker.
-        // The implementation is in triggerHistoricalDataCollectionAndProfileUpdate().
-        // We can leave this empty or remove it if no longer referenced elsewhere.
+    private fun checkAndTriggerInitialTraining() {
+        viewModelScope.launch {
+            if (!profileStatusManager.isInitialTrainingDone()) {
+                Log.i(TAG, "Initial training not completed. Triggering...")
+
+                val constraints = Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+
+                val trainingRequest = OneTimeWorkRequestBuilder<TrainingWorker>()
+                    .setConstraints(constraints)
+                    .build()
+
+                WorkManager.getInstance(context).enqueueUniqueWork(
+                    "InitialTrainingWork",
+                    ExistingWorkPolicy.KEEP, // Use REPLACE to start a new one if a manual one was already pending
+                    trainingRequest
+                )
+
+                profileStatusManager.setInitialTrainingDone()
+                Log.i(TAG, "Initial training DONE.")
+            } else {
+                Log.i(TAG, "Initial training already completed. Skipping .....")
+            }
+        }
     }
+
+   private fun collectHistoricalDataAndTrainModel() {
+        viewModelScope.launch {
+            Log.d(TAG, "Starting historical AppUsageRecord collection for $HISTORICAL_DATA_COLLECTION_DAYS days and autoencoder model training...")
+            try {
+                usageStatsCollector.collectAndStoreUsageDataForPastDays(HISTORICAL_DATA_COLLECTION_DAYS)
+                Log.d(TAG, "Historical AppUsageRecord collection attempt complete for $HISTORICAL_DATA_COLLECTION_DAYS days.")
+
+                usageStatsAutoencoder.sendDataToTrainModel()
+                Log.d(TAG, "Autoencoder model training request sent.")
+
+                loadCollectedAppUsageRecordsForDisplay()
+
+            } catch (e: SecurityException) {
+                Log.e(TAG, "Permission error during data collection. Ensure PACKAGE_USAGE_STATS is granted.", e)
+                _collectedUsageRecords.value = emptyList()
+                _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Data collection permission denied"), 0)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during historical collection or model training: ${e.localizedMessage}", e)
+                _collectedUsageRecords.value = emptyList()
+                _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Profile/model training error: ${e.localizedMessage}"), 0)
+            }
+        }
+   }
 
     private fun loadCollectedAppUsageRecordsForDisplay() {
         viewModelScope.launch {
@@ -172,6 +221,7 @@ class BehaviouralProfileViewModel @Inject constructor(
         stopRealtimeMonitoring()
         Log.d(TAG, "BehaviouralProfileViewModel cleared.")
     }
+
 
     fun triggerHistoricalDataCollectionAndProfileUpdate() {
         Log.d(TAG, "Manual trigger for training work requested.")

@@ -39,7 +39,6 @@ class UsageStatsCollector @Inject constructor(
 
         val overallEndTimestamp = System.currentTimeMillis()
 
-
         val tempUtcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
         tempUtcCal.timeInMillis = overallEndTimestamp
 

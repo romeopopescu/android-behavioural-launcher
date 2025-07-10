@@ -106,7 +106,7 @@ class AppUsageRepositoryImpl @Inject constructor(
         return appInformationDao.getAllAppsSnapshot().filter { it.packageName != myPackageName }
     }
 
-    suspend fun getTopAppsThisHour(topN: Int = 3): List<Pair<String, String>> { // returns List of (packageName, appName)
+    suspend fun getTopAppsThisHour(topN: Int = 3): List<Pair<String, String>> {
         val myPackageName = context.packageName
         val calendar = Calendar.getInstance()
         val endTime = calendar.timeInMillis

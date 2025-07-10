@@ -46,12 +46,6 @@ class LauncherViewModel @Inject constructor(
     private val _riskyApps = MutableStateFlow<List<RiskyAppDisplay>>(emptyList())
     val riskyApps: StateFlow<List<RiskyAppDisplay>> = _riskyApps.asStateFlow()
 
-//    init {
-//        loadAppUsage()
-//        loadRecommendedApps()
-//        loadRiskyApps()
-//    }
-
     fun loadAppUsage() {
         viewModelScope.launch {
             val usageDataList: List<AppUsageData> = UsageStatsHelper.getAppUsageData(context)
@@ -103,6 +97,11 @@ class LauncherViewModel @Inject constructor(
         }
     }
 
+    //    init {
+//        loadAppUsage()
+//        loadRecommendedApps()
+//        loadRiskyApps()
+//    }
     @RequiresApi(Build.VERSION_CODES.O)
     fun loadRecommendedApps() {
         viewModelScope.launch {

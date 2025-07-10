@@ -16,7 +16,7 @@ object PermissionRiskScorer {
         android.Manifest.permission.READ_PHONE_STATE to 5,
         android.Manifest.permission.READ_EXTERNAL_STORAGE to 5,
         android.Manifest.permission.WRITE_EXTERNAL_STORAGE to 5,
-        // MANAGE_EXTERNAL_STORAGE
+
         // android.Manifest.permission.MANAGE_EXTERNAL_STORAGE to 15,
         // android.Manifest.permission.SYSTEM_ALERT_WINDOW
         // android.Manifest.permission.BIND_DEVICE_ADMIN

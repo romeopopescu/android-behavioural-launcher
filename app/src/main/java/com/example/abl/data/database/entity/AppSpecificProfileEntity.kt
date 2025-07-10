@@ -13,7 +13,7 @@ import com.example.abl.data.database.model.ProfileTypeConverters
             entity = NormalBehaviourProfileEntity::class,
             parentColumns = ["profileId"],
             childColumns = ["ownerProfileId"],
-            onDelete = ForeignKey.CASCADE // If a profile is deleted, its app-specific profiles are also deleted
+            onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [androidx.room.Index(value = ["ownerProfileId"])]
@@ -21,12 +21,12 @@ import com.example.abl.data.database.model.ProfileTypeConverters
 @TypeConverters(ProfileTypeConverters::class)
 data class AppSpecificProfileEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val ownerProfileId: String, // Foreign key to NormalBehaviourProfileEntity
+    val ownerProfileId: String,
     val packageName: String,
     val typicalTotalForegroundTimePerDayMsStart: Long,
     val typicalTotalForegroundTimePerDayMsEnd: Long,
     val typicalLaunchCountPerDayStart: Int,
     val typicalLaunchCountPerDayEnd: Int,
-    val commonHoursOfDay: Set<Int>,      // Will be converted by ProfileTypeConverters
-    val commonDaysOfWeek: Set<Int>       // Will be converted by ProfileTypeConverters
+    val commonHoursOfDay: Set<Int>,
+    val commonDaysOfWeek: Set<Int>
 ) 
