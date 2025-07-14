@@ -23,6 +23,7 @@ import com.example.abl.data.database.entity.RiskyApp
 import com.example.abl.data.database.entity.UserProfile
 import com.example.abl.data.database.entity.NormalBehaviourProfileEntity
 import com.example.abl.data.database.entity.AppSpecificProfileEntity
+import com.example.abl.data.database.entity.TodayUsage
 import com.example.abl.data.database.model.ProfileTypeConverters
 import dagger.hilt.android.HiltAndroidApp
 
@@ -32,7 +33,7 @@ import dagger.hilt.android.HiltAndroidApp
         AppUsagePattern::class, Recommendations::class,
         RiskyApp::class, UserProfile::class, AppUsageRecord::class,
         NormalBehaviourProfileEntity::class,
-        AppSpecificProfileEntity::class
+        AppSpecificProfileEntity::class, TodayUsage::class
     ],
     version = 1
 )

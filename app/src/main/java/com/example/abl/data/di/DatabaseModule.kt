@@ -1,5 +1,6 @@
 package com.example.abl.data.di
 
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import androidx.room.Room
 import com.example.abl.data.database.AppDatabase
@@ -10,6 +11,7 @@ import com.example.abl.data.database.dao.RiskyAppDao
 import com.example.abl.data.database.dao.UserProfileDao
 import com.example.abl.data.database.dao.NormalBehaviourProfileDao
 import com.example.abl.data.database.dao.AppSpecificProfileDao
+import com.example.abl.data.database.dao.TodayUsageDao
 import com.example.abl.data.repository.AppInformationRepositoryImpl
 import com.example.abl.data.repository.AppUsageRepositoryImpl
 import com.example.abl.data.repository.BehaviouralProfileRepositoryImpl
@@ -105,6 +107,18 @@ abstract class DatabaseModule {
         @Provides
         fun provideAppSpecificProfileDao(database: AppDatabase): AppSpecificProfileDao {
             return database.appSpecificProfileDao()
+        }
+
+        @Singleton
+        @Provides
+        fun provideTodayUsageDao(database: AppDatabase): TodayUsageDao {
+            return database.todayUsageDao()
+        }
+
+        @Provides
+        @Singleton
+        fun provideUsageStatsManager(@ApplicationContext context: Context): UsageStatsManager {
+            return context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         }
     }
 }
