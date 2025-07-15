@@ -31,7 +31,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // The UI can be set up immediately
         setContent {
             AndroidLauncherForBehaviouralProfileTheme {
                 AppRoot()
@@ -41,18 +40,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // onResume is called when the user returns to the app,
-        // making it the perfect place to check for the permission again.
         checkPermissionsAndStartProcess()
     }
 
     private fun checkPermissionsAndStartProcess() {
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         if (powerManager.isIgnoringBatteryOptimizations(packageName)) {
-            // Permission is granted, start the feature's logic flow.
             viewModel.onAppLaunch()
         } else {
-            // Permission is NOT granted, send the user to settings.
             requestBatteryOptimizationExemption()
         }
     }
@@ -62,7 +57,6 @@ class MainActivity : ComponentActivity() {
             action = android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
             data = Uri.parse("package:$packageName")
         }
-        // This will only be called if the permission is missing.
         startActivity(intent)
     }
 

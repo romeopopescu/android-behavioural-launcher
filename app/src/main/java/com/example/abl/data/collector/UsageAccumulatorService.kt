@@ -120,9 +120,8 @@ class UsageAccumulatorService: Service() {
     }
 
     private fun createNotification(): Notification {
-        // You can add an intent here to open your app when the notification is tapped
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Behavioral Launcher Active")
+            .setContentTitle("Behavioural Launcher Active")
             .setContentText("Securing your device by learning your usage patterns.")
             .setSmallIcon(R.mipmap.ic_launcher)
             .build()

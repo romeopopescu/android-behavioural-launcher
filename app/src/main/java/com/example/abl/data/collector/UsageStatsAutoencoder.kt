@@ -63,10 +63,10 @@ class UsageStatsAutoencoder @Inject constructor(
 
                 val apiUsageData = transformToAppUsageDataApi(rawRecords)
                 if (apiUsageData.isEmpty()) {
-                    Log.w(TAG, "No transformed usage data to send (all records might have been filtered or empty initially).")
+                    Log.w(TAG, "No transformed usage data to send")
                     return@withContext
                 }
-                Log.d(TAG, "Transformed ${apiUsageData.size} records for API.")
+                Log.d(TAG, "Transformed records for api")
 
                 val requestBody = TrainRequestBody(
                     usageData = apiUsageData,
@@ -74,7 +74,7 @@ class UsageStatsAutoencoder @Inject constructor(
                     validationSplit = 0.2f
                 )
 
-                Log.d(TAG, "Sending training data to the API...")
+                Log.d(TAG, "Sending training data to the api..")
                 val response = apiService.trainModel(requestBody)
 
                 if (response.isSuccessful) {
@@ -82,7 +82,7 @@ class UsageStatsAutoencoder @Inject constructor(
                     if (trainingResponse != null && trainingResponse.success) {
                         Log.i(TAG, "Training request successful. Model ID: ${trainingResponse.modelId}, Threshold: ${trainingResponse.threshold}")
                     } else {
-                        Log.w(TAG, "Training request sent, but API indicated failure or null response. Message: ${response.message()}, Body: ${response.errorBody()?.string()}")
+                        Log.w(TAG, "Training request sent, but api failure. Message: ${response.message()}, Body: ${response.errorBody()?.string()}")
                     }
                 } else {
                     val errorBody = response.errorBody()?.string() ?: "No error body"

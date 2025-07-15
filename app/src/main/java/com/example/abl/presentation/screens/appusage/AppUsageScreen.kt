@@ -75,7 +75,7 @@ fun AppUsageScreen(
     calendar.set(Calendar.MILLISECOND, 0)
     val startTime = remember { calendar.timeInMillis }
     val usageStatsManager = context.getSystemService(android.content.Context.USAGE_STATS_SERVICE) as UsageStatsManager
-    val usageStatsList = remember(startTime, endTime) { // startTime and endTime are stable for this composition
+    val usageStatsList = remember(startTime, endTime) {
         usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_DAILY, startTime, endTime
         )
@@ -92,39 +92,36 @@ fun AppUsageScreen(
                     val iconDrawable = packageManager.getApplicationIcon(usageStats.packageName)
                     val iconBitmap = drawableToImageBitmap(iconDrawable)
 
-                    // Anonymous object to hold intermediate data
                     object {
                         val appName = appName
-                        // val packageName = usageStats.packageName // Kept for potential future use (e.g. unique keys)
+                        // val packageName = usageStats.packageName
                         val totalTimeInForeground = usageStats.totalTimeInForeground
                         val lastTimeUsed = usageStats.lastTimeUsed
                         val firstTimeStamp = usageStats.firstTimeStamp
                         val icon = iconBitmap
                     }
                 } catch (e: PackageManager.NameNotFoundException) {
-                    null // Skip if app info cannot be fetched (e.g., app uninstalled during processing)
+                    null
                 }
             }
 
-        // Group by appName and then select the entry with max usage within each group
         processedStats
             .groupBy { it.appName }
-            .mapNotNull { (appName, group) -> // group is List of the anonymous objects
-                // Find the entry with the maximum totalTimeInForeground in this group
+            .mapNotNull { (appName, group) ->
                 val primaryEntry = group.maxByOrNull { it.totalTimeInForeground }
 
                 primaryEntry?.let { entry ->
-                    val totalTime = entry.totalTimeInForeground // Use time from the primary entry
+                    val totalTime = entry.totalTimeInForeground
                     val totalMinutes = (totalTime / 60000) % 60
                     val totalHours = totalTime / 3600000
 
                     AppUsageDisplay(
-                        appName = appName, // appName is the group key
+                        appName = appName,
                         totalTimeInHours = totalHours,
                         totalTimeInMinutes = totalMinutes,
-                        lastTimeUsed = entry.lastTimeUsed.toString(), // Use from primary entry
-                        firstTimeUsed = entry.firstTimeStamp.toString(), // Use from primary entry
-                        icon = entry.icon // Use icon from primary entry
+                        lastTimeUsed = entry.lastTimeUsed.toString(),
+                        firstTimeUsed = entry.firstTimeStamp.toString(),
+                        icon = entry.icon
                     )
                 }
             }
@@ -151,7 +148,6 @@ fun AppUsageScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    // App icon
                     val iconBitmap = usage.icon
                     if (iconBitmap != null) {
                         Image(
@@ -170,7 +166,7 @@ fun AppUsageScreen(
                             fontSize = 13.sp,
                             color = Color.Gray
                         )
-                        // Progress bar
+
                         val percent = if (totalMinutes > 0) (usage.totalTimeInHours * 60 + usage.totalTimeInMinutes).toFloat() / totalMinutes else 0f
                         Box(
                             modifier = Modifier
@@ -199,7 +195,7 @@ fun drawableToImageBitmap(drawable: Drawable): ImageBitmap? {
         when (drawable) {
             is BitmapDrawable -> drawable.bitmap.asImageBitmap()
             is AdaptiveIconDrawable -> {
-                val size = 108 // px, adjust as needed
+                val size = 108
                 val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(bitmap)
                 drawable.setBounds(0, 0, size, size)

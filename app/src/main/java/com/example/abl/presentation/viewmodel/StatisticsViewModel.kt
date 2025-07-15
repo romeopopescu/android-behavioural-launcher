@@ -47,27 +47,22 @@ class StatisticsViewModel @Inject constructor(
                 return@launch
             }
 
-            // 1. Calculate Total Screen Time
             val totalMillis = records.sumOf { it.totalTimeInForeground }
             val formattedTime = formatDuration(totalMillis)
 
-            // 2. Calculate Total App Launches
             val totalLaunches = records.sumOf { it.launchCount }.toString()
 
-            // 3. Find the Most Used App (by foreground time)
             val mostUsedAppPackage = records
                 .groupBy { it.packageName }
                 .mapValues { (_, appRecords) -> appRecords.sumOf { it.totalTimeInForeground } }
                 .maxByOrNull { it.value }?.key
             val mostUsedAppName = getAppName(mostUsedAppPackage)
 
-            // 4. Find the Most Active Day (by foreground time)
             val mostActiveDay = records
                 .groupBy { getDayFromTimestamp(it.queryStartTime) }
                 .mapValues { (_, dayRecords) -> dayRecords.sumOf { it.totalTimeInForeground } }
                 .maxByOrNull { it.value }?.key ?: "N/A"
 
-            // Update the UI State
             _uiState.value = StatisticsUiState(
                 mostUsedApp = mostUsedAppName,
                 totalScreenTime = formattedTime,

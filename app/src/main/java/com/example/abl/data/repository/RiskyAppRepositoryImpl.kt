@@ -40,33 +40,26 @@ class RiskyAppRepositoryImpl @Inject constructor(
 
                 if (riskScore > 0) {
                     if (existingRiskyApp != null) {
-                        // Update existing entry only if score changed to avoid unnecessary writes
                         if (existingRiskyApp.riskScore != riskScore) {
                             riskyAppDao.insert(existingRiskyApp.copy(riskScore = riskScore))
                         }
                     } else {
-                        // Insert new entry
                         riskyAppDao.insert(RiskyApp(
-                            id = 0, // id is auto-generated, so 0 is fine for insertion
+                            id = 0,
                             appId = appInfo.appId,
                             packageName = appInfo.packageName,
                             riskScore = riskScore
                         ))
                     }
                 } else {
-                    // Risk score is 0, remove if it exists
                     if (existingRiskyApp != null) {
                         riskyAppDao.deleteByAppId(appInfo.appId)
                     }
                 }
 
             } catch (e: PackageManager.NameNotFoundException) {
-                // App not found, likely uninstalled, ensure it's removed from RiskyApp table
                 riskyAppDao.deleteByAppId(appInfo.appId)
             } catch (e: Exception) {
-                // Handle other potential exceptions during permission checking or DB operation
-                // Log the error or handle as appropriate for your app
-                // For now, we'll just print to stack trace as an example, but you might want more robust logging
                 e.printStackTrace()
             }
         }

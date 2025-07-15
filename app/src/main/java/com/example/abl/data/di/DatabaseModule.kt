@@ -22,9 +22,6 @@ object DatabaseModule {
             .fallbackToDestructiveMigration()
             .build()
     }
-
-    // You now need to provide ALL DAOs that are used anywhere in your app.
-    // I am adding them all here based on your previous file.
     @Provides
     @Singleton
     fun provideAppInformationDao(db: AppDatabase) = db.appInformationDao()

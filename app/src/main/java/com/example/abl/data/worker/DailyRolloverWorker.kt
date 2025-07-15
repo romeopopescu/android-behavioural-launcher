@@ -29,13 +29,13 @@ class DailyRolloverWorker @AssistedInject constructor(
 
             if (todayRecords.isNotEmpty()) {
                 val calendar = Calendar.getInstance()
-                calendar.add(Calendar.DATE, -1) // Records are for the day that just ended
+                calendar.add(Calendar.DATE, -1)
                 val yesterdayTimestamp = calendar.timeInMillis
 
                 val historicalRecords = todayRecords.map {
                     AppUsageRecord(
                         packageName = it.packageName,
-                        queryStartTime = yesterdayTimestamp, // Approximate timestamp
+                        queryStartTime = yesterdayTimestamp,
                         queryEndTime = yesterdayTimestamp,
                         totalTimeInForeground = it.totalTimeInForeground,
                         recordedAt = System.currentTimeMillis(),

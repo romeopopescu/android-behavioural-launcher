@@ -169,10 +169,10 @@ class BehaviouralProfileViewModel @Inject constructor(
                 appUsageRecordDao.getRecordsByQueryDateRange(rangeStart = startTime, rangeEnd = endTime)
                     .collect { records ->
                         _collectedUsageRecords.value = records.sortedByDescending { it.queryStartTime + it.lastHourUsed } // Sort for display
-                        Log.d(TAG, "Successfully loaded ${records.size} AppUsageRecord items (by query date) for display.")
+                        Log.d(TAG, "Successfully loaded ${records.size} AppUsageRecord items")
                     }
             } catch (e: Exception) {
-                Log.e(TAG, "Error loading records from AppUsageRecordDao for display (by query date)", e)
+                Log.e(TAG, "Error loading records from AppUsageRecordDao", e)
                 _collectedUsageRecords.value = emptyList()
             }
         }

@@ -35,7 +35,6 @@ fun UserStatisticsPage(
             TopAppBar(title = { Text("User Statistics") })
         }
     ) { paddingValues ->
-        // THE FIX IS HERE: Add the verticalScroll modifier to the Column
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -50,8 +49,7 @@ fun UserStatisticsPage(
                 fontWeight = FontWeight.Bold
             )
 
-            // Placeholder for your chart
-            Spacer(modifier = Modifier.height(25.dp)) // Using a spacer as a placeholder
+            Spacer(modifier = Modifier.height(25.dp))
 
             Text(
                 text = "Key Usage Metrics",

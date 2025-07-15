@@ -28,7 +28,7 @@ class TrainingWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         return try {
             Log.d(TAG, "Training worker starting.")
-            val historicalRecords = appUsageRecordDao.getAllAppsUsageForApi() // Assumes you added this to your DAO
+            val historicalRecords = appUsageRecordDao.getAllAppsUsageForApi()
 
             if (historicalRecords.isEmpty()) {
                 Log.w(TAG, "No historical data to train model.")
