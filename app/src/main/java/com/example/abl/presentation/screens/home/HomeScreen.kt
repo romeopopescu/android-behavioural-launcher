@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.example.abl.domain.usecases.anomaly.AnomalyDetectionResult
 import com.example.abl.presentation.viewmodel.BehaviouralProfileViewModel
 import com.example.abl.presentation.viewmodel.SearchViewModel
@@ -48,21 +50,22 @@ fun HomeScreen(
     val searchViewModel: SearchViewModel = hiltViewModel()
     val riskyApps = launcherViewModel.riskyApps.collectAsState().value
     val behaviouralProfileViewModel: BehaviouralProfileViewModel = hiltViewModel()
-    val anomalyStatus by behaviouralProfileViewModel.anomalyDetectionStatus.collectAsState()
+    val anomalyUiState by behaviouralProfileViewModel.anomalyDetectionStatus.collectAsState()
     var showHighAlertDialog by remember { mutableStateOf(false) }
     var highAlertReasons by remember { mutableStateOf<List<String>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         launcherViewModel.loadRecommendedApps()
         launcherViewModel.loadRiskyApps()
+        behaviouralProfileViewModel.onAppLaunch()
     }
 
-    LaunchedEffect(anomalyStatus) {
-        if (anomalyStatus is AnomalyDetectionResult.HighAlert) {
-            highAlertReasons = (anomalyStatus as AnomalyDetectionResult.HighAlert).reasons
-            showHighAlertDialog = true
-        }
-    }
+//    LaunchedEffect(anomalyStatus) {
+//        if (anomalyStatus is AnomalyDetectionResult.HighAlert) {
+//            highAlertReasons = (anomalyStatus as AnomalyDetectionResult.HighAlert).reasons
+//            showHighAlertDialog = true
+//        }
+//    }
 
     if (showHighAlertDialog) {
         AlertDialog(
@@ -88,31 +91,42 @@ fun HomeScreen(
         verticalArrangement = Arrangement.Top,
         modifier = Modifier.padding(16.dp)
     ) {
-        Button(
-            onClick = onNavigateToUsageStats
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start, // You can change this to Center or End
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("App Usage")
+            Button(onClick = onNavigateToUsageStats) {
+                Text("App Usage")
+            }
+            // Add a Spacer for breathing room between the buttons
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = onNavigateToStatsPage) {
+                Text("Stats")
+            }
         }
-        Button(
-            onClick = onNavigateToStatsPage
-        ) {
-            Text("Stats")
-        }
+
         Spacer(modifier = Modifier.height(8.dp))
 
-        val statusText = when (val status = anomalyStatus) {
-            is AnomalyDetectionResult.Normal -> "Status: Normal"
-            is AnomalyDetectionResult.Suspicious -> "Status: Suspicious (Score: ${status.deviationScore})Reasons: ${status.reasons.joinToString()}"
-            is AnomalyDetectionResult.HighAlert -> "Status: High Alert! (Score: ${status.deviationScore})Reasons: ${status.reasons.joinToString()}"
-        }
-        val statusColor = when (anomalyStatus) {
-            is AnomalyDetectionResult.HighAlert -> Color.Red
-            is AnomalyDetectionResult.Suspicious -> Color.DarkGray
+        val statusText = "Anomaly Status: ${anomalyUiState.riskLevel}"
+
+        val statusColor = when (anomalyUiState.riskLevel) {
+            "CRITICAL" -> Color.Red
+            "HIGH" -> Color(0xFFFFA500)
+            "MEDIUM" -> Color.Yellow
+            "LOW" -> Color.Green
             else -> Color.Gray
         }
-        Text(text = statusText, color = statusColor)
+
+        Text(
+            text = statusText,
+            color = statusColor,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
+
         if (recommendedApps.isNotEmpty()) {
             Text("Recommended for you", color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
             Row(

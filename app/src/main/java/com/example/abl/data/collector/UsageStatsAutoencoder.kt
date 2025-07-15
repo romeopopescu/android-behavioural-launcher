@@ -113,6 +113,8 @@ class UsageStatsAutoencoder @Inject constructor(
 
                 val requestBody = AnomalyDetectionRequest(usageData = apiUsageData)
 
+                Log.i(TAG, "DETECTION REQUEST BODY: $requestBody")
+
                 Log.d(TAG, "Sending detection data to the API...")
                 val response = apiService.detectAnomalies(requestBody)
 

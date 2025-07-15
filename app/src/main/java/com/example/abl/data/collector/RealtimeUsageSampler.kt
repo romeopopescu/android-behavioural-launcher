@@ -107,7 +107,7 @@ class RealtimeUsageSampler @Inject constructor(
                 Log.w(TAG, "queryEvents returned null for sampling window.")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Exception querying or processing usage events for sampling.", e)
+            Log.e(TAG, "error processing usage events", e)
         }
 
         appEventDetails.forEach { (packageName, details) ->

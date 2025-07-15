@@ -105,6 +105,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
     // Charty
 //    implementation("com.himanshoe:charty:2.1.0-beta03.2")
 }

@@ -19,6 +19,7 @@ import com.example.abl.data.preferences.ProfileStatusManager
 import com.example.abl.data.worker.TrainingWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,24 +33,25 @@ import java.util.*
 
 @HiltViewModel
 class BehaviouralProfileViewModel @Inject constructor(
-    @ApplicationContext private val context: Context, 
+    @ApplicationContext private val context: Context,
     private val usageStatsCollector: UsageStatsCollector,
-    private val appUsageRecordDao: AppUsageRecordDao, 
+    private val appUsageRecordDao: AppUsageRecordDao,
     private val realtimeUsageSampler: RealtimeUsageSampler,
     private val usageStatsAutoencoder: UsageStatsAutoencoder,
     private val profileStatusManager: ProfileStatusManager
 ) : ViewModel() {
 
     private val TAG = "BehaviouralProfileVM"
-    private val REALTIME_SAMPLING_INTERVAL_MS = 1 * 60 * 1000L 
-    private val SAMPLER_WINDOW_DURATION_MS = 15 * 60 * 1000L 
+    private val REALTIME_SAMPLING_INTERVAL_MS = 1 * 60 * 1000L
+    private val SAMPLER_WINDOW_DURATION_MS = 15 * 60 * 1000L
     private val HISTORICAL_DATA_COLLECTION_DAYS = 7
 
     private val _collectedUsageRecords = MutableStateFlow<List<AppUsageRecord>>(emptyList())
     val collectedUsageRecords: StateFlow<List<AppUsageRecord>> = _collectedUsageRecords.asStateFlow()
 
-    private val _anomalyDetectionStatus = MutableStateFlow<AnomalyDetectionResult>(AnomalyDetectionResult.Normal)
-    val anomalyDetectionStatus: StateFlow<AnomalyDetectionResult> = _anomalyDetectionStatus.asStateFlow()
+    private val _anomalyDetectionStatus = MutableStateFlow(AnomalyUiState())
+    val anomalyDetectionStatus: StateFlow<AnomalyUiState> = _anomalyDetectionStatus.asStateFlow()
+
 
     private var monitoringJob: Job? = null
 
@@ -59,6 +61,44 @@ class BehaviouralProfileViewModel @Inject constructor(
 //        collectHistoricalDataAndTrainModel()
 //        checkAndTriggerInitialTraining()
 //        startRealtimeMonitoring()
+    }
+    fun onAppLaunch() {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (!profileStatusManager.isInitialTrainingDone()) {
+                Log.i(TAG, "First launch: Collecting history and training model.")
+                usageStatsCollector.collectAndStoreUsageDataForPastDays(7)
+                usageStatsAutoencoder.sendDataToTrainModel()
+                profileStatusManager.setInitialTrainingDone()
+                Log.i(TAG, "Initial training complete.")
+            }
+            startRealtimeMonitoring()
+        }
+    }
+
+    private fun startRealtimeMonitoring() {
+        if (monitoringJob?.isActive == true) return
+        monitoringJob = viewModelScope.launch(Dispatchers.IO) {
+            Log.d(TAG, "Starting real-time anomaly monitoring loop.")
+            while (isActive) {
+                try {
+                    val currentUsage = realtimeUsageSampler.sampleCurrentUsage()
+                    if (currentUsage.isNotEmpty()) {
+
+                        val response = usageStatsAutoencoder.detectAnomalies(currentUsage)
+                        Log.d(TAG, "Real-time detection result: $response")
+
+                        if (response != null && response.success) {
+                            _anomalyDetectionStatus.value = AnomalyUiState(
+                                riskLevel = response.overallRiskLevel,
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in loop", e)
+                }
+                delay(60 * 1000L)
+            }
+        }
     }
 
     private fun checkAndTriggerInitialTraining() {
@@ -76,7 +116,7 @@ class BehaviouralProfileViewModel @Inject constructor(
 
                 WorkManager.getInstance(context).enqueueUniqueWork(
                     "InitialTrainingWork",
-                    ExistingWorkPolicy.KEEP, // Use REPLACE to start a new one if a manual one was already pending
+                    ExistingWorkPolicy.KEEP,
                     trainingRequest
                 )
 
@@ -103,11 +143,11 @@ class BehaviouralProfileViewModel @Inject constructor(
             } catch (e: SecurityException) {
                 Log.e(TAG, "Permission error during data collection. Ensure PACKAGE_USAGE_STATS is granted.", e)
                 _collectedUsageRecords.value = emptyList()
-                _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Data collection permission denied"), 0)
+//                _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Data collection permission denied"), 0)
             } catch (e: Exception) {
                 Log.e(TAG, "Error during historical collection or model training: ${e.localizedMessage}", e)
                 _collectedUsageRecords.value = emptyList()
-                _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Profile/model training error: ${e.localizedMessage}"), 0)
+//                _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Profile/model training error: ${e.localizedMessage}"), 0)
             }
         }
    }
@@ -138,107 +178,7 @@ class BehaviouralProfileViewModel @Inject constructor(
         }
     }
 
-    fun startRealtimeMonitoring() {
-        if (monitoringJob?.isActive == true) {
-            Log.d(TAG, "Realtime monitoring is already active.")
-            return
-        }
-        monitoringJob = viewModelScope.launch {
-            Log.d(TAG, "Starting realtime anomaly monitoring loop.")
-            while (isActive) {
-                try {
-                    val currentUsageRecords = realtimeUsageSampler.sampleCurrentUsage(SAMPLER_WINDOW_DURATION_MS)
-                    Log.d(TAG, "Sampled ${currentUsageRecords.size} records for current usage.")
-
-                    if (currentUsageRecords.isNotEmpty()){
-                        val anomalyResponse = usageStatsAutoencoder.detectAnomalies(currentUsageRecords)
-                        if (anomalyResponse != null && anomalyResponse.success) {
-                            val anomalousResults = anomalyResponse.results.filter { it.isAnomaly }
-                            val overallRisk = anomalyResponse.overallRiskLevel.uppercase()
-                            
-                            if (anomalousResults.isNotEmpty()) {
-                                val reasons = anomalousResults.map { "App: ${it.app}, Risk: ${it.riskLevel}, Score: %.2f".format(it.anomalyScore) }
-                                val score = when(overallRisk) {
-                                    "CRITICAL" -> 100
-                                    "HIGH" -> 75
-                                    "MEDIUM" -> 50
-                                    else -> 25 // Corresponds to LOW
-                                }
-
-                                when (overallRisk) {
-                                    "CRITICAL", "HIGH" -> {
-                                        _anomalyDetectionStatus.value = AnomalyDetectionResult.HighAlert(reasons, score)
-                                    }
-                                    "MEDIUM" -> {
-                                        _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(reasons, score)
-                                    }
-                                    else -> { // "LOW"
-                                        // Even if an app has an anomaly score above threshold, if the overall risk is low,
-                                        // we can treat it as normal for the UI to avoid over-alarming the user.
-                                        _anomalyDetectionStatus.value = AnomalyDetectionResult.Normal
-                                    }
-                                }
-                                Log.w(TAG, "Anomaly detected with overall risk: $overallRisk. Details: ${reasons.joinToString()}")
-                            } else {
-                                _anomalyDetectionStatus.value = AnomalyDetectionResult.Normal
-                                Log.i(TAG, "No anomalies detected in current usage. Overall risk: ${anomalyResponse.overallRiskLevel}")
-                            }
-                        } else {
-                            Log.e(TAG, "Anomaly detection API call failed or returned no success.")
-                            _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Failed to get anomaly status from API"), 50)
-                        }
-
-                    } else {
-                        if(_anomalyDetectionStatus.value !is AnomalyDetectionResult.Normal) {
-                           _anomalyDetectionStatus.value = AnomalyDetectionResult.Normal
-                           Log.d(TAG, "No recent usage detected in the sample window. Status set to Normal.")
-                        }
-                    }
-
-                } catch (e: SecurityException) {
-                    Log.e(TAG, "Permission error during realtime sampling. Ensure PACKAGE_USAGE_STATS.", e)
-                    _anomalyDetectionStatus.value = AnomalyDetectionResult.HighAlert(listOf("Realtime monitoring permission error"), 100)
-                    delay(REALTIME_SAMPLING_INTERVAL_MS * 5)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error in realtime monitoring loop: ${e.localizedMessage}", e)
-                    _anomalyDetectionStatus.value = AnomalyDetectionResult.Suspicious(listOf("Realtime monitoring error: ${e.message}"), 50)
-                     delay(REALTIME_SAMPLING_INTERVAL_MS)
-                }
-                delay(REALTIME_SAMPLING_INTERVAL_MS)
-            }
-        }
-        Log.d(TAG, "Realtime monitoring job initiated.")
-    }
-
-    fun stopRealtimeMonitoring() {
-        monitoringJob?.cancel()
-        monitoringJob = null
-        Log.d(TAG, "Realtime monitoring stopped.")
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        stopRealtimeMonitoring()
-        Log.d(TAG, "BehaviouralProfileViewModel cleared.")
-    }
-
-
-    fun triggerHistoricalDataCollectionAndProfileUpdate() {
-        Log.d(TAG, "Manual trigger for training work requested.")
-
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
-        val trainingRequest = OneTimeWorkRequestBuilder<TrainingWorker>()
-            .setConstraints(constraints)
-            .build()
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            "ManualTrainingWork",
-            ExistingWorkPolicy.REPLACE, // Use REPLACE to start a new one if a manual one was already pending
-            trainingRequest
-        )
-        Log.d(TAG, "Manual training work enqueued.")
-    }
 }
+data class AnomalyUiState(
+    val riskLevel: String = "PENDING",
+)

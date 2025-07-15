@@ -30,16 +30,12 @@
         android:theme="@style/Theme.AndroidLauncherForBehavouralProfile"
         tools:targetApi="31">
 
-        <provider
-            android:name="androidx.work.impl.WorkManager"
-            android:authorities="${applicationId}.workmanager-init"
-            tools:node="remove" />
-
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.AndroidLauncherForBehavouralProfile"
+            android:launchMode="singleInstance"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
