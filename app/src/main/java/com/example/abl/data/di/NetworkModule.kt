@@ -16,7 +16,6 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(): Retrofit {
-        // IMPORTANT: For Android emulator to reach localhost on your machine, use 10.0.2.2
         val baseUrl = "http://10.145.200.143:8000/"
         return Retrofit.Builder()
             .baseUrl(baseUrl)

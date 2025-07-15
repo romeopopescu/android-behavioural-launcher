@@ -5,42 +5,80 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.example.abl.data.collector.UsageStatsAutoencoder
-import com.example.abl.data.collector.UsageStatsCollector
+import com.example.abl.data.database.dao.AppUsageRecordDao
+import com.example.abl.data.database.entity.AppUsageRecord // Make sure this is imported
+import com.example.abl.data.network.ApiService
+import com.example.abl.data.network.AppUsageDataApi
+import com.example.abl.data.network.TrainRequestBody
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-
+import java.text.SimpleDateFormat
+import java.util.*
 
 @HiltWorker
 class TrainingWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted workerParams: WorkerParameters,
-    private val usageStatsCollector: UsageStatsCollector,
-    private val usageStatsAutoencoder: UsageStatsAutoencoder
-) : CoroutineWorker(appContext, workerParams) {
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
+    private val appUsageRecordDao: AppUsageRecordDao,
+    private val apiService: ApiService
+) : CoroutineWorker(context, params) {
 
     private val TAG = "TrainingWorker"
-    private val HISTORICAL_DATA_COLLECTION_DAYS = 7
 
     override suspend fun doWork(): Result {
-        Log.d(TAG, "Training worker started: Collecting data and training model.")
-
         return try {
-            usageStatsCollector.collectAndStoreUsageDataForPastDays(HISTORICAL_DATA_COLLECTION_DAYS)
-            Log.d(TAG, "Worker: Historical data collection complete.")
+            Log.d(TAG, "Training worker starting.")
+            val historicalRecords = appUsageRecordDao.getAllAppsUsageForApi() // Assumes you added this to your DAO
 
-            usageStatsAutoencoder.sendDataToTrainModel()
-            Log.d(TAG, "Worker: Autoencoder model training request sent.")
+            if (historicalRecords.isEmpty()) {
+                Log.w(TAG, "No historical data to train model.")
+                return Result.success()
+            }
+
+            val apiData = transformToAppUsageDataApi(historicalRecords)
+
+            if (apiData.isEmpty()) {
+                Log.w(TAG, "No transformed usage data to send.")
+                return Result.success()
+            }
+
+            val requestBody = TrainRequestBody(
+                    usageData = apiData,
+                    epochs = 30,
+                    validationSplit = 0.2f
+                )
+            val response = apiService.trainModel(requestBody)
+
+            if (response.isSuccessful) {
+                Log.i(TAG, "Successfully sent ${apiData.size} records for training.")
+            } else {
+                Log.e(TAG, "API call for training failed: ${response.code()} ${response.message()}")
+                return Result.retry()
+            }
 
             Result.success()
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Worker failed due to permissions. This requires user action.", e)
-            // Retrying won't fix a permissions issue.
-            Result.failure()
         } catch (e: Exception) {
-            Log.e(TAG, "Worker failed, will retry.", e)
-            // Could be a temporary network issue, so we should retry.
+            Log.e(TAG, "Training worker failed with an exception.", e)
             Result.retry()
+        }
+    }
+
+    private fun transformToAppUsageDataApi(records: List<AppUsageRecord>): List<AppUsageDataApi> {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return records.mapNotNull { record ->
+
+            if (record.firstHourUsed == -1 && record.lastHourUsed == -1 && record.launchCount == 0 && record.totalTimeInForeground == 0L) {
+                return@mapNotNull null
+            }
+
+            AppUsageDataApi(
+                app = record.packageName,
+                date = dateFormat.format(Date(record.queryStartTime)),
+                firstHour = record.firstHourUsed,
+                lastHour = record.lastHourUsed,
+                launchCount = record.launchCount,
+                totalTimeInForeground = record.totalTimeInForeground / 1000
+            )
         }
     }
 }

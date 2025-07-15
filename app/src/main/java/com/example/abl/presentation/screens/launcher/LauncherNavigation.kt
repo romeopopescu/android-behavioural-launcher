@@ -5,13 +5,15 @@ import androidx.navigation.compose.composable
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object LauncherDestination
+data object LauncherDestination {
+    const val route = "launcher_screen"
+}
 
 fun NavGraphBuilder.launcherScreen(
     onNavigateToUsageStats: () -> Unit,
     onNavigateToStatsPage: () -> Unit
 ) {
-    composable<LauncherDestination> {
+    composable(LauncherDestination.route) {
         LauncherScreen(
             onNavigateToUsageData = onNavigateToUsageStats,
             onNavigateToStatsPage = onNavigateToStatsPage

@@ -6,13 +6,15 @@ import androidx.navigation.compose.composable
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object UserStatisticsDestination
+data object UserStatisticsDestination {
+    const val route = "user_statistics_screen"
+}
 
 fun NavGraphBuilder.appUserStatisticsPage(
     onNavigateToMain: () -> Unit,
 //    onNavigateBack: () -> Unit
 ) {
-    composable<UserStatisticsDestination> {
+    composable(route=UserStatisticsDestination.route) {
         UserStatisticsPage(
             onNavigateToMain = onNavigateToMain
 //            onNavigateBack = onNavigateBack
@@ -21,5 +23,5 @@ fun NavGraphBuilder.appUserStatisticsPage(
 }
 
 fun NavController.navigateToStatisticsPage() {
-    navigate(UserStatisticsDestination)
+    this.navigate(UserStatisticsDestination.route)
 }

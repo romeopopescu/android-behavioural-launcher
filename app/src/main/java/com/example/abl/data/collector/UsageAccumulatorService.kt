@@ -39,6 +39,8 @@ class UsageAccumulatorService: Service() {
     private val TAG = "AccumulatorService"
     private val NOTIFICATION_CHANNEL_ID = "UsageAccumulatorChannel"
     private val ACCUMULATION_INTERVAL_MS = 10 * 60 * 1000L
+    private val NOTIFICATION_ID = 1
+
 
     @SuppressLint("ForegroundServiceType")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -118,6 +120,7 @@ class UsageAccumulatorService: Service() {
     }
 
     private fun createNotification(): Notification {
+        // You can add an intent here to open your app when the notification is tapped
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle("Behavioral Launcher Active")
             .setContentText("Securing your device by learning your usage patterns.")

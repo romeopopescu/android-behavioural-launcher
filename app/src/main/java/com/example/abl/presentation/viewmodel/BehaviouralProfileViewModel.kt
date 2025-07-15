@@ -57,8 +57,8 @@ class BehaviouralProfileViewModel @Inject constructor(
         Log.d(TAG, "BehaviouralProfileViewModel initialized.")
         loadCollectedAppUsageRecordsForDisplay()
 //        collectHistoricalDataAndTrainModel()
-        checkAndTriggerInitialTraining()
-        startRealtimeMonitoring()
+//        checkAndTriggerInitialTraining()
+//        startRealtimeMonitoring()
     }
 
     private fun checkAndTriggerInitialTraining() {

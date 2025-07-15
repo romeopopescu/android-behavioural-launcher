@@ -29,20 +29,49 @@ class HiltApplication: Application(), Configuration.Provider {
             .setWorkerFactory(workerFactory)
             .build()
 
+    override fun onCreate() {
+        super.onCreate()
+        scheduleInitialTraining()
+        scheduleDailyRollover()
+        scheduleWeeklyTraining()
+    }
+
+    private fun scheduleInitialTraining() {
+        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val isInitialTrainingScheduled = prefs.getBoolean("initial_training_scheduled", false)
+
+        if (!isInitialTrainingScheduled) {
+            Log.i("HiltApplication", "First launch detected. Scheduling initial model training.")
+
+            val trainingRequest = OneTimeWorkRequestBuilder<TrainingWorker>()
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .build()
+
+            WorkManager.getInstance(this).enqueueUniqueWork(
+                "InitialTrainingWork",
+                ExistingWorkPolicy.KEEP, // KEEP ensures it only runs once
+                trainingRequest
+            )
+
+            prefs.edit().putBoolean("initial_training_scheduled", true).apply()
+        }
+    }
+
+
     private fun scheduleDailyRollover() {
-        // Define constraints for the work
         val constraints = Constraints.Builder()
-            .setRequiresBatteryNotLow(true) // Only run when battery is not low
+            .setRequiresBatteryNotLow(true)
             .build()
 
-        // Create a periodic request to run once a day
         val rolloverRequest =
             PeriodicWorkRequestBuilder<DailyRolloverWorker>(1, TimeUnit.DAYS)
                 .setConstraints(constraints)
                 .build()
 
-        // Enqueue the work as unique periodic work.
-        // 'KEEP' policy ensures that if the work is already scheduled, it is not replaced.
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "DailyRolloverWork",
             ExistingPeriodicWorkPolicy.KEEP,
@@ -50,4 +79,23 @@ class HiltApplication: Application(), Configuration.Provider {
         )
     }
 
+    private fun scheduleWeeklyTraining() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiresCharging(true)
+            .build()
+
+        val trainingRequest =
+            PeriodicWorkRequestBuilder<TrainingWorker>(7, TimeUnit.DAYS)
+                .setConstraints(constraints)
+                .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "WeeklyTrainingWork",
+            ExistingPeriodicWorkPolicy.KEEP,
+            trainingRequest
+        )
+
+        Log.i("HiltApplication", "Weekly model training has been scheduled.")
+    }
 }

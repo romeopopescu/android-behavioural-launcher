@@ -94,7 +94,7 @@ class AppUsageRepositoryImpl @Inject constructor(
                     totalTimeInHours = totalTimeInHours,
                     totalTimeInMinutes = totalTimeInMinutes,
                     lastTimeUsed = usageStats.lastTimeUsed.toString(),
-                    firstTimeUsed = usageStats.firstTimeStamp.toString()
+                    firstTimeUsed = usageStats.getFirstTimeStamp().toString()
                 )
                 appUsageDataDao.insert(appUsageData)
             }
