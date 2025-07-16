@@ -57,7 +57,6 @@ class LauncherViewModel @Inject constructor(
     fun loadRiskyApps() {
         viewModelScope.launch {
             try {
-                // This repository method has a TODO, may throw NotImplementedError
                 riskyAppRepositoryImpl.insertRiskyApps()
             } catch (e: NotImplementedError) {
                 Log.w(TAG, "riskyAppRepositoryImpl.insertRiskyApps() is not yet implemented. Skipping.", e)

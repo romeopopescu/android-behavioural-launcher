@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -46,6 +47,7 @@ class MainActivity : ComponentActivity() {
     private fun checkPermissionsAndStartProcess() {
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         if (powerManager.isIgnoringBatteryOptimizations(packageName)) {
+            Log.d("CHECKING", "is sending viewmodel")
             viewModel.onAppLaunch()
         } else {
             requestBatteryOptimizationExemption()
