@@ -112,7 +112,6 @@ object UsageStatsHelper {
     }
 }
 
-//temporary data class
 data class AppUsageDataTest(
     val packageName: String,
     val totalTimeInForegroundHours: Long,

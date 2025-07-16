@@ -23,7 +23,9 @@ import com.example.abl.data.database.entity.RiskyApp
 import com.example.abl.data.repository.AppUsageRepositoryImpl
 import com.example.abl.data.repository.RiskyAppRepositoryImpl
 import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import kotlinx.coroutines.flow.firstOrNull
 
 @HiltViewModel
@@ -36,21 +38,13 @@ class LauncherViewModel @Inject constructor(
     val appUsage: StateFlow<List<AppUsageData>> = _appUsage.asStateFlow()
     private val TAG = "LauncherViewModel"
 
-    // Recommended Apps
     data class RecommendedApp(val packageName: String, val appName: String, val icon: ImageBitmap?)
     private val _recommendedApps = MutableStateFlow<List<RecommendedApp>>(emptyList())
     val recommendedApps: StateFlow<List<RecommendedApp>> = _recommendedApps.asStateFlow()
 
-    // Risky Apps
     data class RiskyAppDisplay(val packageName: String, val appName: String, val riskScore: Int, val icon: ImageBitmap?)
     private val _riskyApps = MutableStateFlow<List<RiskyAppDisplay>>(emptyList())
     val riskyApps: StateFlow<List<RiskyAppDisplay>> = _riskyApps.asStateFlow()
-
-//    init {
-//        loadAppUsage()
-//        loadRecommendedApps()
-//        loadRiskyApps()
-//    }
 
     fun loadAppUsage() {
         viewModelScope.launch {
@@ -59,10 +53,10 @@ class LauncherViewModel @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun loadRiskyApps() {
         viewModelScope.launch {
             try {
-                // This repository method has a TODO, may throw NotImplementedError
                 riskyAppRepositoryImpl.insertRiskyApps()
             } catch (e: NotImplementedError) {
                 Log.w(TAG, "riskyAppRepositoryImpl.insertRiskyApps() is not yet implemented. Skipping.", e)
@@ -86,10 +80,9 @@ class LauncherViewModel @Inject constructor(
                     )
                 } catch (e: PackageManager.NameNotFoundException) {
                     Log.e(TAG, "App not found while loading risky app: ${entity.packageName}", e)
-                    null // Skip this app if its details can't be loaded
+                    null
                 } catch (e: Exception) {
                     Log.e(TAG, "Error loading icon or name for risky app: ${entity.packageName}", e)
-                    // Fallback: create with package name as appName and no icon
                     val appNameFallback = try { pm.getApplicationLabel(pm.getApplicationInfo(entity.packageName, 0)).toString() } catch (e2: Exception) { entity.packageName }
                     RiskyAppDisplay(
                         packageName = entity.packageName,
@@ -103,11 +96,17 @@ class LauncherViewModel @Inject constructor(
         }
     }
 
+    //    init {
+//        loadAppUsage()
+//        loadRecommendedApps()
+//        loadRiskyApps()
+//    }
+    @RequiresApi(Build.VERSION_CODES.O)
     fun loadRecommendedApps() {
         viewModelScope.launch {
             val pm = context.packageManager
-            val topApps = appUsageRepositoryImpl.getTopAppsThisHour(3) // List<Pair<String, String>>
-            val recs = topApps.map { (packageName, appNamePair) -> // Assuming appNamePair is the app name
+            val topApps = appUsageRepositoryImpl.getTopAppsThisHour(3)
+            val recs = topApps.map { (packageName, appNamePair) ->
                 val icon: ImageBitmap? = try {
                     val drawable = pm.getApplicationIcon(packageName)
                     drawableToImageBitmap(drawable)
@@ -124,6 +123,7 @@ class LauncherViewModel @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun drawableToImageBitmap(drawable: Drawable): ImageBitmap? {
         return try {
             when (drawable) {

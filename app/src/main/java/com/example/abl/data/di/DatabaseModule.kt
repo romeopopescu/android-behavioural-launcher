@@ -1,19 +1,9 @@
 package com.example.abl.data.di
 
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import androidx.room.Room
 import com.example.abl.data.database.AppDatabase
-import com.example.abl.data.database.dao.AppInformationDao
-import com.example.abl.data.database.dao.AppUsageDataDao
-import com.example.abl.data.database.dao.RiskyAppDao
-import com.example.abl.data.database.dao.UserProfileDao
-import com.example.abl.data.repository.AppInformationRepositoryImpl
-import com.example.abl.data.repository.AppUsageRepositoryImpl
-import com.example.abl.data.repository.RiskyAppRepositoryImpl
-import com.example.abl.domain.repository.AppInformationRepository
-import com.example.abl.domain.repository.AppUsageRepository
-import com.example.abl.domain.repository.RiskyAppRepository
-import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,59 +13,51 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class DatabaseModule {
-    @Binds
+object DatabaseModule {
+
+    @Provides
     @Singleton
-    abstract fun bindAppInformationRepository(
-        appInformationRepositoryImpl: AppInformationRepositoryImpl
-    ): AppInformationRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindAppUsageRepository(
-        impl: AppUsageRepositoryImpl
-    ): AppUsageRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindRiskyAppRepository(
-        riskyAppRepositoryImpl: RiskyAppRepositoryImpl
-    ): RiskyAppRepository
-
-    companion object {
-
-        @Singleton
-        @Provides
-        fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
-            return Room.databaseBuilder(
-                context.applicationContext,
-                AppDatabase::class.java,
-                "app_database"
-            ).build()
-        }
-
-        @Singleton
-        @Provides
-        fun provideAppInformationDao(database: AppDatabase): AppInformationDao {
-            return database.appInformationDao()
-        }
-
-        @Singleton
-        @Provides
-        fun provideAppUsageDataDao(database: AppDatabase): AppUsageDataDao {
-            return database.appUsageDataDao()
-        }
-
-        @Singleton
-        @Provides
-        fun provideUserProfileDao(database: AppDatabase): UserProfileDao {
-            return database.userProfileDao()
-        }
-
-        @Singleton
-        @Provides
-        fun provideRiskyAppDao(database: AppDatabase): RiskyAppDao {
-            return database.riskyAppDao()
-        }
+    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(context, AppDatabase::class.java, "abl_database")
+            .fallbackToDestructiveMigration()
+            .build()
     }
+    @Provides
+    @Singleton
+    fun provideAppInformationDao(db: AppDatabase) = db.appInformationDao()
+
+    @Provides
+    @Singleton
+    fun provideAppUsageDataDao(db: AppDatabase) = db.appUsageDataDao()
+
+    @Provides
+    @Singleton
+    fun provideUserProfileDao(db: AppDatabase) = db.userProfileDao()
+
+    @Provides
+    @Singleton
+    fun provideRiskyAppDao(db: AppDatabase) = db.riskyAppDao()
+
+    @Provides
+    @Singleton
+    fun provideAppUsageRecordDao(db: AppDatabase) = db.appUsageRecordDao()
+
+    @Provides
+    @Singleton
+    fun provideNormalBehaviourProfileDao(db: AppDatabase) = db.normalBehaviourProfileDao()
+
+    @Provides
+    @Singleton
+    fun provideAppSpecificProfileDao(db: AppDatabase) = db.appSpecificProfileDao()
+
+    @Provides
+    @Singleton
+    fun provideTodayUsageDao(db: AppDatabase) = db.todayUsageDao()
+
+    @Provides
+    @Singleton
+    fun provideUsageStatsManager(@ApplicationContext context: Context): UsageStatsManager {
+        return context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+    }
+
 }

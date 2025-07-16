@@ -26,14 +26,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 
-data class AppUsageDisplay(
-    val appName: String,
-    val totalTimeInHours: Long,
-    val totalTimeInMinutes: Long,
-    val lastTimeUsed: String,
-    val firstTimeUsed: String,
-    val icon: ImageBitmap?
-)
+
 
 @HiltViewModel
 class AppUsageViewModel @Inject constructor(
@@ -134,4 +127,12 @@ class AppUsageViewModel @Inject constructor(
             "N/A"
         }
     }
-} 
+}
+data class AppUsageDisplay(
+    val appName: String,
+    val totalTimeInHours: Long,
+    val totalTimeInMinutes: Long,
+    val lastTimeUsed: String,
+    val firstTimeUsed: String,
+    val icon: ImageBitmap?
+)
